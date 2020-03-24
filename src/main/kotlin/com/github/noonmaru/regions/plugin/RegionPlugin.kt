@@ -1,11 +1,11 @@
-package com.github.noonmaru.sample.plugin
+package com.github.noonmaru.regions.plugin
 
 import org.bukkit.plugin.java.JavaPlugin
 
 /**
  * @author Nemo
  */
-class SamplePlugin : JavaPlugin() {
+class RegionPlugin : JavaPlugin() {
     override fun onEnable() {
         logger.info("Hello Kotlin Plugin!")
     }
