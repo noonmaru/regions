@@ -1,9 +1,9 @@
-package com.github.noonmaru.regions
+package com.github.noonmaru.regions.api
 
 import kotlin.math.max
 import kotlin.math.min
 
-class Box(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int) {
+class RegionBox(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int) {
     val minX: Int = min(minX, maxX)
     val minY: Int = min(minY, maxY)
     val minZ: Int = min(minZ, maxZ)
@@ -11,8 +11,15 @@ class Box(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int) {
     val maxY: Int = max(minY, maxY)
     val maxZ: Int = max(minZ, maxZ)
 
-    fun expand(x: Int, y: Int, z: Int): Box {
-        return Box(minX - x, minY - y, minZ - z, maxX + x, maxY + y, maxZ + z)
+    fun expand(x: Int, y: Int, z: Int): RegionBox {
+        return RegionBox(
+            minX - x,
+            minY - y,
+            minZ - z,
+            maxX + x,
+            maxY + y,
+            maxZ + z
+        )
     }
 
     fun contains(x: Int, y: Int, z: Int): Boolean {
@@ -30,9 +37,9 @@ class Box(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int) {
         return this.minX <= maxX && this.maxX >= minX && this.minY <= maxY && this.maxY >= minY && this.minZ <= maxZ && this.maxZ >= minZ
     }
 
-    fun overlaps(box: Box) {
+    fun overlaps(box: RegionBox): Boolean {
         return box.run {
-            this@Box.overlaps(minX, minY, minZ, maxX, maxY, maxZ)
+            this@RegionBox.overlaps(minX, minY, minZ, maxX, maxY, maxZ)
         }
     }
 

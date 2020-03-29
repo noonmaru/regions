@@ -1,5 +1,6 @@
 package com.github.noonmaru.regions.plugin
 
+import com.github.noonmaru.regions.api.Regions
 import org.bukkit.plugin.java.JavaPlugin
 
 /**
@@ -7,6 +8,6 @@ import org.bukkit.plugin.java.JavaPlugin
  */
 class RegionPlugin : JavaPlugin() {
     override fun onEnable() {
-        logger.info("Hello Kotlin Plugin!")
+        Regions.initialize(this)
     }
 }
