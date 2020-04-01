@@ -3,6 +3,7 @@ package com.github.noonmaru.regions.internal
 import com.github.noonmaru.regions.api.Region
 import com.github.noonmaru.regions.api.RegionChunk
 import com.github.noonmaru.regions.api.RegionWorld
+import com.github.noonmaru.regions.util.UpstreamReference
 import com.google.common.collect.ImmutableList
 
 class RegionChunkImpl(

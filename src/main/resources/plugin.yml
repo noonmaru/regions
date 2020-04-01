@@ -1,5 +1,8 @@
 name: $pluginName
 main: $pluginMain
-depend: [Kotlin, Tap]
+depend: [Kotlin, Tap, WorldEdit]
 api-version: '1.13'
 version: $pluginVersion
+commands:
+  region:
+    usage: /<command> help

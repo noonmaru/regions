@@ -24,10 +24,10 @@ enum class Protection : Indexable {
     override val raw: Int = super.raw
 
     companion object {
-        val BY_OFFSET = ImmutableList.copyOf(values())
+        val byOffset = ImmutableList.copyOf(values())
 
         fun getByOffset(offset: Int): Protection {
-            return BY_OFFSET[offset]
+            return byOffset[offset]
         }
     }
 }
@@ -36,14 +36,15 @@ interface Protectible {
     val protections: Set<Protection>
 
     fun hasProtection(protection: Protection): Boolean
+
     fun addProtection(vararg protections: Protection) {
-        addProtection(protections.toList())
+        addProtection(protections.asList())
     }
 
     fun addProtection(protections: Collection<Protection>)
 
     fun removeProtection(vararg protections: Protection) {
-        removeProtection(protections.toList())
+        removeProtection(protections.asList())
     }
 
     fun removeProtection(protections: Collection<Protection>)

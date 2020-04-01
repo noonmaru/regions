@@ -3,6 +3,7 @@ package com.github.noonmaru.regions.internal
 import com.github.noonmaru.regions.api.Permission
 import com.github.noonmaru.regions.api.Role
 import com.github.noonmaru.regions.util.IntBitSet
+import com.github.noonmaru.regions.util.UpstreamReference
 import java.util.*
 
 class RoleImpl(
@@ -22,12 +23,12 @@ class RoleImpl(
 
     internal val _permissions = IntBitSet { Permission.getByOffset(it) }
 
-    override fun addPermissions(permissions: Collection<Permission>) {
-        _permissions.addAll(permissions)
+    internal fun addPermissions(permissions: Collection<Permission>): Boolean {
+        return _permissions.addAll(permissions)
     }
 
-    override fun removePermission(permissions: Collection<Permission>) {
-        _permissions.removeAll(permissions)
+    internal fun removePermissions(permissions: Collection<Permission>): Boolean {
+        return _permissions.removeAll(permissions)
     }
 
     override fun hasPermission(permission: Permission): Boolean {
@@ -40,6 +41,8 @@ class RoleImpl(
 
     override fun delete() {
         checkState()
+        region.checkState()
+
         require(!defaultRole) { "Cannot delete default role" }
         region.removeRole(name)
     }

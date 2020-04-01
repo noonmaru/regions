@@ -4,14 +4,26 @@ import com.github.noonmaru.regions.api.Protection
 import com.github.noonmaru.regions.api.Region
 import com.github.noonmaru.regions.api.RegionBox
 import com.github.noonmaru.regions.api.RegionWorld
+import com.github.noonmaru.regions.getEnums
+import com.github.noonmaru.regions.setEnums
 import com.github.noonmaru.regions.util.IntBitSet
 import com.github.noonmaru.regions.util.LongHash
 import com.github.noonmaru.regions.util.LongObjectHashMap
 import com.google.common.collect.ImmutableList
 import org.bukkit.World
+import org.bukkit.configuration.ConfigurationSection
+import org.bukkit.configuration.file.YamlConfiguration
+import java.io.File
 import java.util.*
 
-class RegionWorldImpl : RegionWorld {
+class RegionWorldImpl(
+    private val manager: RegionManagerImpl,
+    override val name: String
+) : RegionWorld {
+    companion object {
+        private const val CFG_PROTECTIONS = "protections"
+    }
+
     override var bukkitWorld: World? = null
     override val regions: List<Region>
         get() = ImmutableList.copyOf(_regions)
@@ -22,6 +34,11 @@ class RegionWorldImpl : RegionWorld {
     private val _protections = IntBitSet { Protection.getByOffset(it) }
 
     private val chunks = LongObjectHashMap<RegionChunkImpl>()
+
+    private var mustBeSave = false
+
+    private val file: File
+        get() = File(manager.worldsFolder, "$name.yml")
 
     override fun checkOverlap(box: RegionBox, except: Region?) {
         val overlapList = getOverlapRegions(box, except)
@@ -108,5 +125,21 @@ class RegionWorldImpl : RegionWorld {
 
     override fun removeProtection(protections: Collection<Protection>) {
         _protections.removeAll(protections)
+    }
+
+    fun load(config: ConfigurationSection) {
+        _protections.addAll(config.getEnums(CFG_PROTECTIONS) { Protection.valueOf(it) })
+    }
+
+    override fun save(): Boolean {
+        if (!mustBeSave) return false
+
+        val config = YamlConfiguration()
+        config.setEnums(CFG_PROTECTIONS, this._protections)
+        val file = file
+        file.parentFile.mkdirs()
+        config.save(file)
+        mustBeSave = false
+        return true
     }
 }

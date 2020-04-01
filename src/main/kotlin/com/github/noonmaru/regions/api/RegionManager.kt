@@ -1,5 +1,6 @@
 package com.github.noonmaru.regions.api
 
+import com.github.noonmaru.regions.internal.RegionImpl
 import com.github.noonmaru.tap.mojang.MojangProfile
 import org.bukkit.World
 import org.bukkit.entity.Player
@@ -28,4 +29,5 @@ interface RegionManager {
     fun getUser(profile: MojangProfile): User
 
     fun getUser(player: Player): User
+    fun getRegion(parentName: String): RegionImpl?
 }

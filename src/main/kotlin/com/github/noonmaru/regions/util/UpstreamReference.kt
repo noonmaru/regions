@@ -1,4 +1,4 @@
-package com.github.noonmaru.regions.internal
+package com.github.noonmaru.regions.util
 
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference

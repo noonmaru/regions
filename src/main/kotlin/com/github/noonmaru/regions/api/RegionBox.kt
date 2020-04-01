@@ -43,4 +43,8 @@ class RegionBox(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int
         }
     }
 
+    override fun toString(): String {
+        return "[$minX, $minY, $minZ - $maxX, $maxY, $maxZ]"
+    }
+
 }

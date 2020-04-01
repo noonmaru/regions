@@ -5,6 +5,7 @@ import com.github.noonmaru.regions.api.Permission
 import com.github.noonmaru.regions.api.Role
 import com.github.noonmaru.regions.api.User
 import com.github.noonmaru.regions.util.IntBitSet
+import com.github.noonmaru.regions.util.UpstreamReference
 import com.google.common.collect.ImmutableList
 import java.util.*
 
@@ -13,7 +14,7 @@ class MemberImpl(region: RegionImpl, user: UserImpl) : Member {
         get() = regionRef.get()
     override val user: User
         get() = userRef.get()
-    override val roles: List<Role>
+    override val roles: List<RoleImpl>
         get() = ImmutableList.copyOf(_roles)
     override val permissions: Set<Permission> by lazy(LazyThreadSafetyMode.NONE) {
         Collections.unmodifiableSet(_permissions.clone())
@@ -42,6 +43,10 @@ class MemberImpl(region: RegionImpl, user: UserImpl) : Member {
 
             return field
         }
+
+    internal fun loadRoles(role: Collection<RoleImpl>) {
+        _roles.addAll(role)
+    }
 
     internal fun addRole(role: RoleImpl): Boolean {
         return _roles.add(role).also {

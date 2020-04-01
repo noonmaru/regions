@@ -32,6 +32,18 @@ interface Region : Protectible, Checkable {
 
     fun getRole(name: String): Role?
 
+    fun addPermissionToRole(role: Role, vararg permissions: Permission): Boolean {
+        return addPermissionToRole(role, permissions.asList())
+    }
+
+    fun addPermissionToRole(role: Role, permissions: Collection<Permission>): Boolean
+
+    fun removePermissionFromRole(role: Role, vararg permissions: Permission): Boolean {
+        return removePermissionFromRole(role, permissions.asList())
+    }
+
+    fun removePermissionFromRole(role: Role, permissions: Collection<Permission>): Boolean
+
     fun addMember(user: User): Member
 
     fun removeMember(user: User): Member?
@@ -49,6 +61,8 @@ interface Region : Protectible, Checkable {
     fun getMembersWithRoles(roles: Collection<Role>): List<Member>
 
     fun getPermissions(player: Player): Set<Permission>
+
+    fun save(): Boolean
 
     fun delete()
 }
