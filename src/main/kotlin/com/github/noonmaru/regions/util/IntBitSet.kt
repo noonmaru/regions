@@ -56,6 +56,10 @@ class IntBitSet<E : Indexable>(rawElements: Int = 0, private val converter: (off
         private var offset = 0
         private var next: E? = null
 
+        init {
+            prepareNext()
+        }
+
         private fun prepareNext() {
             val rawElements = rawElements
             val converter = converter
@@ -65,17 +69,14 @@ class IntBitSet<E : Indexable>(rawElements: Int = 0, private val converter: (off
             do {
                 val raw = 1 shl offset
 
-                if (rawElements and raw == raw) {
-                    val e = converter(offset)
-
-                    if (next != null) {
-                        next = e
-                        break
-                    }
+                if ((rawElements and raw) == raw) {
+                    next = converter(offset)
                 }
-                offset++
-            } while (rawElements ushr offset != 0)
 
+                offset++
+            } while (next == null && (rawElements ushr offset) != 0)
+
+            this.offset = offset
             this.next = next
         }
 
@@ -84,7 +85,9 @@ class IntBitSet<E : Indexable>(rawElements: Int = 0, private val converter: (off
         }
 
         override fun next(): E {
-            return next.also { prepareNext() } ?: throw NoSuchElementException()
+            return next?.also {
+                prepareNext()
+            } ?: throw NoSuchElementException()
         }
 
         override fun remove() {
@@ -163,7 +166,12 @@ class IntBitSet<E : Indexable>(rawElements: Int = 0, private val converter: (off
         rawElements = rawElements and other.rawElements
     }
 
+    @Suppress("UNCHECKED_CAST")
     public override fun clone(): IntBitSet<E> {
         return super.clone() as IntBitSet<E>
+    }
+
+    override fun toString(): String {
+        return joinToString(prefix = "[", postfix = "]", separator = ",", transform = { it.toString() })
     }
 }

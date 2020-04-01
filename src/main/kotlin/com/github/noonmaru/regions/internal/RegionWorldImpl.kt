@@ -1,17 +1,13 @@
 package com.github.noonmaru.regions.internal
 
-import com.github.noonmaru.regions.api.Protection
-import com.github.noonmaru.regions.api.Region
-import com.github.noonmaru.regions.api.RegionBox
-import com.github.noonmaru.regions.api.RegionWorld
-import com.github.noonmaru.regions.getEnums
-import com.github.noonmaru.regions.setEnums
+import com.github.noonmaru.regions.api.*
+import com.github.noonmaru.regions.toEnumList
+import com.github.noonmaru.regions.toStringList
 import com.github.noonmaru.regions.util.IntBitSet
 import com.github.noonmaru.regions.util.LongHash
 import com.github.noonmaru.regions.util.LongObjectHashMap
 import com.google.common.collect.ImmutableList
 import org.bukkit.World
-import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.util.*
@@ -127,19 +123,32 @@ class RegionWorldImpl(
         _protections.removeAll(protections)
     }
 
-    fun load(config: ConfigurationSection) {
-        _protections.addAll(config.getEnums(CFG_PROTECTIONS) { Protection.valueOf(it) })
+    fun load(file: File) {
+        val config = YamlConfiguration.loadConfiguration(file)
+        val protections = config.getStringList(CFG_PROTECTIONS).toEnumList({ Protection.getByKey(it) }) { name ->
+            Regions.logger.warning("Unknown protection '$name' in world file '${file.name}'")
+        }
+
+        _protections.addAll(protections)
     }
 
     override fun save(): Boolean {
         if (!mustBeSave) return false
 
         val config = YamlConfiguration()
-        config.setEnums(CFG_PROTECTIONS, this._protections)
+        config[CFG_PROTECTIONS] = _protections.toStringList()
         val file = file
         file.parentFile.mkdirs()
-        config.save(file)
+
+        val tempFile = File(file.parent, "${file.name}.tmp")
+        config.save(tempFile)
+        file.delete()
+        tempFile.renameTo(file)
         mustBeSave = false
         return true
+    }
+
+    fun setMustBeSave() {
+        this.mustBeSave = true
     }
 }

@@ -365,9 +365,10 @@ class RegionImpl internal constructor(
             //부가 기본요소
             region.apply {
                 //load protection
-                val protections = config.getStringList(CFG_PROTECTIONS).toEnumList(Protection::valueOf) { _, name ->
-                    Regions.logger.warning("Unknown protection '$name' in region file ${file.name}")
-                }
+                val protections =
+                    config.getStringList(CFG_PROTECTIONS).toEnumList({ Protection.getByKey(it) }) { name ->
+                        Regions.logger.warning("Unknown protection '$name' in region file ${file.name}")
+                    }
                 _protections.addAll(protections)
 
                 //load roles
@@ -375,9 +376,10 @@ class RegionImpl internal constructor(
                     for ((name, roleConfig) in roleConfigs) {
                         if (roleConfig is ConfigurationSection) {
                             val permissions =
-                                roleConfig.getStringList(CFG_PERMISSIONS).toEnumList(Permission::valueOf) { _, perm ->
-                                    Regions.logger.warning("Unknown permission '$name.$perm' in region file ${file.name}")
-                                }
+                                roleConfig.getStringList(CFG_PERMISSIONS)
+                                    .toEnumList({ Permission.getByKey(it) }) { perm ->
+                                        Regions.logger.warning("Unknown permission '$name.$perm' in region file ${file.name}")
+                                    }
 
                             val role = RoleImpl(region, name)
                             role._permissions.addAll(permissions)
@@ -392,9 +394,10 @@ class RegionImpl internal constructor(
                 //load public role
                 config.getConfigurationSection(CFG_PUBLIC_ROLE)?.let { publicRoleConfig ->
                     val permissions =
-                        publicRoleConfig.getStringList(CFG_PERMISSIONS).toEnumList(Permission::valueOf) { _, perm ->
-                            Regions.logger.warning("Unknown permission public role '$perm' in region file ${file.name}")
-                        }
+                        publicRoleConfig.getStringList(CFG_PERMISSIONS)
+                            .toEnumList({ Permission.getByKey(it) }) { perm ->
+                                Regions.logger.warning("Unknown permission public role '$perm' in region file ${file.name}")
+                            }
                     _publicRole._permissions.addAll(permissions)
                 }
             }
@@ -493,7 +496,10 @@ class RegionImpl internal constructor(
 
         val file = file
         file.parentFile.mkdirs()
-        config.save(file)
+        val tempFile = File(file.parent, "${file.name}.tmp")
+        config.save(tempFile)
+        file.delete()
+        tempFile.renameTo(file)
         mustBeSave = false
         return true
     }
@@ -534,5 +540,8 @@ private fun ConfigurationSection.save(path: String, role: RoleImpl) {
 }
 
 private fun ConfigurationSection.save(path: String, member: MemberImpl) {
-    createSection(path)[RegionImpl.CFG_ROLES] = member.roles.map { it.name }
+    val section = createSection(path)
+
+    section[RegionImpl.CFG_NAME] = member.user.name
+    section[RegionImpl.CFG_ROLES] = member.roles.map { it.name }
 }

@@ -1,5 +1,6 @@
 package com.github.noonmaru.regions.api
 
+import com.github.noonmaru.regions.internal.RegionImpl
 import com.github.noonmaru.regions.internal.RegionManagerImpl
 import com.github.noonmaru.regions.plugin.RegionPlugin
 import org.bukkit.Location
@@ -9,18 +10,29 @@ import org.bukkit.entity.Player
 import java.util.logging.Logger
 
 object Regions {
-    lateinit var manager: RegionManager
-        private set
     lateinit var logger: Logger
         private set
+    lateinit var manager: RegionManager
+        private set
+
+    val regions: List<Region>
+        get() = manager.regions
 
     internal fun initialize(plugin: RegionPlugin) {
-        manager = RegionManagerImpl(plugin, plugin.dataFolder)
         logger = plugin.logger
+        manager = RegionManagerImpl(plugin, plugin.dataFolder)
     }
 
     fun createRegion(name: String, world: RegionWorld, box: RegionBox): Region {
         return manager.createRegion(name, world, box)
+    }
+
+    fun getWorld(name: String): RegionWorld? {
+        return manager.getRegionWorld(name)
+    }
+
+    fun getRegion(name: String): RegionImpl? {
+        return manager.getRegion(name)
     }
 }
 

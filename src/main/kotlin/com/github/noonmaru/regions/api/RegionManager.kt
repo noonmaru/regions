@@ -29,5 +29,8 @@ interface RegionManager {
     fun getUser(profile: MojangProfile): User
 
     fun getUser(player: Player): User
+
     fun getRegion(parentName: String): RegionImpl?
+
+    fun save()
 }

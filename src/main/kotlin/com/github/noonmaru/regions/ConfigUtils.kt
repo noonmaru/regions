@@ -4,23 +4,25 @@ import com.github.noonmaru.regions.api.RegionBox
 import org.bukkit.configuration.ConfigurationSection
 
 fun <E : Enum<E>> Iterable<String>.toEnumList(
-    transform: (String) -> E,
-    onNotFound: ((t: Throwable, name: String) -> Unit)? = null
+    transform: (String) -> E?,
+    onNotFound: ((name: String) -> Unit)? = null
 ): List<E> {
     val list = ArrayList<E>(count())
 
-    forEach { name ->
-        runCatching {
-            list += transform(name)
-        }.onFailure { t ->
-            onNotFound?.invoke(t, name)
+    loop@ for (name in this) {
+        val value = kotlin.runCatching { transform(name) }.getOrNull()
+
+        if (value != null) {
+            list += list
+        } else {
+            onNotFound?.runCatching { invoke(name) }
         }
     }
 
     return list
 }
 
-fun <E : Enum<E>> Iterable<E>.toStringList(transform: (E) -> String = { it.name }): List<String> {
+fun <E : Enum<E>> Iterable<E>.toStringList(transform: (E) -> String = { it.toString() }): List<String> {
     return map(transform)
 }
 

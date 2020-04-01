@@ -2,13 +2,13 @@ package com.github.noonmaru.regions.internal
 
 import com.github.noonmaru.regions.api.*
 import com.github.noonmaru.regions.plugin.RegionPlugin
+import com.github.noonmaru.regions.util.softCache
 import com.github.noonmaru.tap.mojang.MojangProfile
 import com.github.noonmaru.tap.mojang.getProfile
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.MapMaker
 import org.bukkit.Bukkit
 import org.bukkit.World
-import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -17,32 +17,20 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.world.WorldLoadEvent
 import org.bukkit.event.world.WorldUnloadEvent
 import java.io.File
-import java.lang.ref.SoftReference
 import java.util.*
 
 class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager {
     internal val regionsFolder: File
     internal val worldsFolder: File
 
-    override val worlds: List<RegionWorld>
-        get() {
-            return worldsRef.get()
-                ?: ImmutableList.copyOf(worldsByName.values).also {
-                    worldsRef = SoftReference(it)
-                }
-        }
-    override val regions: List<Region>
-        get() {
-            return regionsRef.get()
-                ?: ImmutableList.copyOf(regionsByName.values).also {
-                    regionsRef = SoftReference(it)
-                }
-        }
+    private val cachedWorlds = softCache { ImmutableList.copyOf(worldsByName.values) }
+    override val worlds: List<RegionWorld> by cachedWorlds
+
+    private val cachedRegions = softCache { ImmutableList.copyOf(regionsByName.values) }
+    override val regions: List<Region> by cachedRegions
+
     override val cachedUsers: List<User>
         get() = ImmutableList.copyOf(usersByUniqueId.values)
-
-    private var worldsRef: SoftReference<List<RegionWorld>> = SoftReference(ImmutableList.of())
-    private var regionsRef: SoftReference<List<Region>> = SoftReference(ImmutableList.of())
 
     private val worldsByName = TreeMap<String, RegionWorldImpl>(String.CASE_INSENSITIVE_ORDER)
     private val worldsByBukkitWorld = HashMap<World, RegionWorldImpl>()
@@ -60,6 +48,7 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
         worldsFolder = File(dataFolder, "worlds").apply { mkdirs() }
 
         loadRegionWorlds()
+        loadRegions()
     }
 
     private fun loadRegionWorlds() {
@@ -71,13 +60,14 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
             val name = worldFile.name.removeSuffix(".yml")
 
             runCatching {
-                val config = YamlConfiguration.loadConfiguration(worldFile)
-                getOrCreateRegionWorld(name).load(config)
+                worldsByName[name] = RegionWorldImpl(this, name)
             }
         }
 
         Bukkit.getWorlds().forEach { world ->
-            getOrCreateRegionWorld(world.name).bukkitWorld = world
+            val regionWorld = getOrCreateRegionWorld(world.name)
+            regionWorld.bukkitWorld = world
+            worldsByBukkitWorld[world] = regionWorld
         }
     }
 
@@ -85,23 +75,28 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
         regionsFolder.listFiles { file: File ->
             !file.isDirectory && file.name.endsWith(".yml")
         }?.let { regionFiles ->
-            val inits = ArrayList<RegionLoader>(regionFiles.count())
+            val loaders = ArrayList<RegionLoader>(regionFiles.count())
             val regionsByName = this.regionsByName
 
             regionFiles.forEach { regionFile ->
                 runCatching {
-                    inits += RegionImpl.load(regionFile, this).also { init ->
-                        val region = init.region
-                        regionsByName[region.name] = region
-                    }
+                    val loader = RegionImpl.load(regionFile, this)
+                    val region = loader.region
+                    val world = region.world
+
+                    world.checkOverlap(region.box)
+                    world.placeRegion(region)
+                    regionsByName[region.name] = region
+
+                    loaders += loader
                 }.onFailure {
                     it.printStackTrace()
-                    Regions.logger.warning("Failed to create region for $regionFile.name")
+                    Regions.logger.warning("Failed to load region for $regionFile.name")
                 }
             }
 
-            inits.forEach { init ->
-                init.initialize()
+            loaders.forEach { loader ->
+                loader.load()
             }
         }
     }
@@ -115,7 +110,7 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
     }
 
     override fun createRegion(name: String, world: RegionWorld, box: RegionBox): Region {
-        require(name.isEmpty()) { "Name is empty" }
+        require(name.isNotEmpty()) { "Name is empty" }
         val regionsByName = this.regionsByName
         require(name !in regionsByName) { "Name already in use" }
         val worldImpl = world as RegionWorldImpl
@@ -126,14 +121,14 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
         }
         worldImpl.placeRegion(region)
         regionsByName[name] = region
-        regionsRef.clear()
+        cachedRegions.clear()
 
         return region
     }
 
     override fun removeRegion(name: String): Region? {
         return regionsByName.remove(name)?.also {
-            regionsRef.clear()
+            cachedRegions.clear()
             it.destroy()
         }
     }
@@ -158,6 +153,16 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
         }
     }
 
+    override fun save() {
+        worlds.forEach {
+            it.runCatching { save() }
+        }
+
+        regions.forEach {
+            it.runCatching { save() }
+        }
+    }
+
     private inner class PlayerListener : Listener {
         @EventHandler
         fun onPlayerJoin(event: PlayerJoinEvent) {
@@ -178,7 +183,10 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
 
     internal fun getOrCreateRegionWorld(name: String): RegionWorldImpl {
         return worldsByName.computeIfAbsent(name) {
-            RegionWorldImpl(this, it)
+            RegionWorldImpl(this, it).apply {
+                setMustBeSave()
+                cachedWorlds.clear()
+            }
         }
     }
 
@@ -199,14 +207,15 @@ class RegionManagerImpl(plugin: RegionPlugin, dataFolder: File) : RegionManager 
         @EventHandler
         fun onWorldLoad(event: WorldLoadEvent) {
             event.world.let { world ->
-                getOrCreateRegionWorld(world.name).bukkitWorld = world
+                val regionWorld = getOrCreateRegionWorld(world.name)
+                worldsByBukkitWorld[world] = regionWorld
             }
         }
 
         @EventHandler
         fun onWorldUnload(event: WorldUnloadEvent) {
-            event.world.let {
-                getRegionWorld(event.world)?.bukkitWorld = null
+            event.world.let { world ->
+                worldsByBukkitWorld.remove(world)?.let { it.bukkitWorld = null }
             }
         }
     }

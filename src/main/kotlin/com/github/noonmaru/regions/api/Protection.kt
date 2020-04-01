@@ -2,21 +2,23 @@ package com.github.noonmaru.regions.api
 
 import com.github.noonmaru.regions.util.Indexable
 import com.google.common.collect.ImmutableList
+import com.google.common.collect.ImmutableSortedMap
+import java.util.*
 
 
-enum class Protection : Indexable {
-    DAMAGE,
-    POTION,
-    BLOCK_IGNITE,
-    BLOCK_MELT,
-    BLOCK_GROW,
-    BLOCK_FORM,
-    BLOCK_SPREAD,
-    BLOCK_REDSTONE,
-    BLOCK_OVERFLOW,
-    BLOCK_FLOOD,
-    ENTITY_CHANGE_BLOCK,
-    EXPLOSION;
+enum class Protection(val key: String) : Indexable {
+    DAMAGE("damage"),
+    POTION("potion"),
+    IGNITION("ignition"),
+    BLOCK_MELT("melt"),
+    GROWTH("growth"),
+    FORM("form"),
+    SPREAD("blockSpread"),
+    REDSTONE("redstone"),
+    OVERFLOW("overflow"),
+    FLOOD("flood"),
+    ENTITY_CHANGE_BLOCK("entityChangeBlock"),
+    EXPLOSION("explosion");
 
     override val offset: Int
         get() = ordinal
@@ -24,11 +26,31 @@ enum class Protection : Indexable {
     override val raw: Int = super.raw
 
     companion object {
-        val byOffset = ImmutableList.copyOf(values())
+        private val byOffset = ImmutableList.copyOf(values())
+        private val byKey: Map<String, Protection>
 
-        fun getByOffset(offset: Int): Protection {
-            return byOffset[offset]
+        init {
+            val byKey = TreeMap<String, Protection>(String.CASE_INSENSITIVE_ORDER)
+
+            for (value in values()) {
+                byKey[value.key] = value
+            }
+
+            this.byKey = ImmutableSortedMap.copyOf(byKey)
         }
+
+        fun getByOffset(offset: Int): Protection? {
+            return byOffset.getOrNull(offset)
+        }
+
+        @JvmStatic
+        fun getByKey(key: String): Protection? {
+            return byKey[key]
+        }
+    }
+
+    override fun toString(): String {
+        return key
     }
 }
 

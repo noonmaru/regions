@@ -6,3 +6,5 @@ version: $pluginVersion
 commands:
   region:
     usage: /<command> help
+  world:
+    usage: /<command> help
