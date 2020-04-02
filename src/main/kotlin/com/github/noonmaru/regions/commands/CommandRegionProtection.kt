@@ -58,6 +58,8 @@ class CommandRegionProtection : CommandComponent {
                 }
 
                 return true
+            } else {
+                sender.sendMessage("알 수 없는 명령입니다.")
             }
         } else {
             sender.sendMessage("다음은 ${region.name} 구역에 적용된 보호 목록입니다.")

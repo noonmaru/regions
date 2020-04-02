@@ -1,9 +1,7 @@
 package com.github.noonmaru.regions.api
 
-interface Role : Permissible, Checkable {
-    val region: Region
+interface Role : Permissible, Checkable, Deletable {
+    val parent: Organizable
 
     val name: String
-
-    fun delete()
 }

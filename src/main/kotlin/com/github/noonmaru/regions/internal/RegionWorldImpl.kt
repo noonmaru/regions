@@ -79,7 +79,7 @@ class RegionWorldImpl(
     }
 
     override fun regionAt(x: Int, y: Int, z: Int): Region? {
-        return chunkAt(x shr 4, z shl 4)?.regionAt(x, y, z)
+        return chunkAt(x shr 4, z shr 4)?.regionAt(x, y, z)
     }
 
     override fun getOverlapRegions(box: RegionBox, except: Region?): List<RegionImpl> {

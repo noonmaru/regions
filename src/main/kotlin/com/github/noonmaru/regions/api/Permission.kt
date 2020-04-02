@@ -5,6 +5,18 @@ import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableSortedMap
 import java.util.*
 
+interface Permissible {
+    val permissions: Set<Permission>
+
+    fun hasPermission(permission: Permission): Boolean
+
+    fun hasPermissions(vararg permissions: Permission): Boolean {
+        return hasPermissions(permissions.asList())
+    }
+
+    fun hasPermissions(permissions: Collection<Permission>): Boolean
+}
+
 enum class Permission(val key: String) : Indexable {
     OWNERSHIP("ownership"),
     ADMINISTRATION("administration"),

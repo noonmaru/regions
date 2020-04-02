@@ -17,9 +17,8 @@ class RoleImpl(
     override val region: RegionImpl
         get() = regionRef.get()
 
-    override val permissions: Set<Permission> by lazy(LazyThreadSafetyMode.NONE) {
-        Collections.unmodifiableSet(_permissions.clone())
-    }
+    override val permissions: Set<Permission>
+        get() = Collections.unmodifiableSet(_permissions.clone())
 
     internal val _permissions = IntBitSet { Permission.getByOffset(it) }
 

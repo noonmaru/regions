@@ -3,10 +3,12 @@ package com.github.noonmaru.regions.api
 import com.github.noonmaru.regions.internal.RegionImpl
 import com.github.noonmaru.regions.internal.RegionManagerImpl
 import com.github.noonmaru.regions.plugin.RegionPlugin
+import com.github.noonmaru.tap.mojang.MojangProfile
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
+import java.util.*
 import java.util.logging.Logger
 
 object Regions {
@@ -33,6 +35,14 @@ object Regions {
 
     fun getRegion(name: String): RegionImpl? {
         return manager.getRegion(name)
+    }
+
+    fun getUser(profile: MojangProfile): User {
+        return manager.getUser(profile)
+    }
+
+    fun getCachedUser(uniqueId: UUID): User? {
+        return manager.getUser(uniqueId)
     }
 }
 

@@ -54,20 +54,20 @@ enum class Protection(val key: String) : Indexable {
     }
 }
 
-interface Protectible {
+interface Protectable {
     val protections: Set<Protection>
 
-    fun hasProtection(protection: Protection): Boolean
+    fun hasProtections(protection: Protection): Boolean
 
-    fun addProtection(vararg protections: Protection) {
-        addProtection(protections.asList())
+    fun addProtections(vararg protections: Protection) {
+        addProtections(protections.asList())
     }
 
-    fun addProtection(protections: Collection<Protection>)
+    fun addProtections(protections: Collection<Protection>)
 
-    fun removeProtection(vararg protections: Protection) {
-        removeProtection(protections.asList())
+    fun removeProtections(vararg protections: Protection) {
+        removeProtections(protections.asList())
     }
 
-    fun removeProtection(protections: Collection<Protection>)
+    fun removeProtections(protections: Collection<Protection>)
 }

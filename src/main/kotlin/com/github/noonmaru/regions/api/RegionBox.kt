@@ -1,5 +1,7 @@
 package com.github.noonmaru.regions.api
 
+import org.bukkit.util.BoundingBox
+import org.bukkit.util.Vector
 import kotlin.math.max
 import kotlin.math.min
 
@@ -41,6 +43,10 @@ class RegionBox(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int
         return box.run {
             this@RegionBox.overlaps(minX, minY, minZ, maxX, maxY, maxZ)
         }
+    }
+
+    fun toBoundingBox(): BoundingBox {
+        return BoundingBox.of(Vector(minX, minY, minZ), Vector(maxX + 1, maxY + 1, maxZ + 1))
     }
 
     override fun toString(): String {

@@ -6,5 +6,13 @@ version: $pluginVersion
 commands:
   region:
     usage: /<command> help
-  world:
-    usage: /<command> help
+permissions:
+  regions.*:
+    default: op
+    children:
+      regions.command: true
+      regions.action: true
+  regions.command:
+    default: op
+  regions.action:
+    default: op

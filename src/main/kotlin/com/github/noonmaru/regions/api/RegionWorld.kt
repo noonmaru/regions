@@ -2,7 +2,7 @@ package com.github.noonmaru.regions.api
 
 import org.bukkit.World
 
-interface RegionWorld : Protectible {
+interface RegionWorld : Area {
     val name: String
 
     val bukkitWorld: World?

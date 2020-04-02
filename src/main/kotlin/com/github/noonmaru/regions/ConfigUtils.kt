@@ -13,7 +13,7 @@ fun <E : Enum<E>> Iterable<String>.toEnumList(
         val value = kotlin.runCatching { transform(name) }.getOrNull()
 
         if (value != null) {
-            list += list
+            list += value
         } else {
             onNotFound?.runCatching { invoke(name) }
         }

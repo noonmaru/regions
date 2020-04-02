@@ -188,16 +188,38 @@ class RegionImpl internal constructor(
     override fun addPermissionToRole(role: Role, permissions: Collection<Permission>): Boolean {
         checkState()
 
-        return role.check().addPermissions(permissions).also {
-            if (it) setMustBeSave()
+        val roleImpl = role.check()
+
+        return roleImpl.addPermissions(permissions).also {
+            if (it) {
+                setMustBeSave()
+                clearPlayerPermission(roleImpl)
+            }
+        }
+    }
+
+    private fun clearPlayerPermission(role: RoleImpl) {
+        val children: Set<RegionImpl> = getAllLineage { _children }
+
+        for (member in _members.values) {
+            if (member.hasRole(role)) {
+                member.user.bukkitPlayer?.let { player ->
+                    clearPermission(player, children)
+                }
+            }
         }
     }
 
     override fun removePermissionFromRole(role: Role, permissions: Collection<Permission>): Boolean {
         checkState()
 
-        return role.check().removePermissions(permissions).also {
-            if (it) setMustBeSave()
+        val roleImpl = role.check()
+
+        return roleImpl.removePermissions(permissions).also {
+            if (it) {
+                setMustBeSave()
+                clearPlayerPermission(roleImpl)
+            }
         }
     }
 
@@ -300,9 +322,12 @@ class RegionImpl internal constructor(
     }
 
     override fun getPermissions(player: Player): Set<Permission> {
-        return playerPermissions.computeIfAbsent(player) {
-            computePermissions(it, it.user)
-        }
+        return computePermissions(player, player.user)
+
+
+//        return playerPermissions.computeIfAbsent(player) {
+//            computePermissions(it, it.user)
+//        }
     }
 
     private fun computePermissions(player: Player, user: User): IntBitSet<Permission> {
@@ -315,6 +340,11 @@ class RegionImpl internal constructor(
                 set.or(parentPermissions)
             else
                 set.and(parentPermissions)
+        }
+
+        _members[user]?.let { member ->
+            set.or(member._permissions)
+            println(member._permissions)
         }
 
         return set
@@ -490,7 +520,7 @@ class RegionImpl internal constructor(
         config.save(CFG_PUBLIC_ROLE, _publicRole)
         config.createSection(CFG_MEMBERS).apply {
             for ((user, member) in _members) {
-                save(user.name, member)
+                save(user.uniqueId.toString(), member)
             }
         }
 

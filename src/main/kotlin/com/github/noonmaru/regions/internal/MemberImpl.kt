@@ -16,17 +16,16 @@ class MemberImpl(region: RegionImpl, user: UserImpl) : Member {
         get() = userRef.get()
     override val roles: List<RoleImpl>
         get() = ImmutableList.copyOf(_roles)
-    override val permissions: Set<Permission> by lazy(LazyThreadSafetyMode.NONE) {
-        Collections.unmodifiableSet(_permissions.clone())
-    }
+    override val permissions: Set<Permission>
+        get() = Collections.unmodifiableSet(_permissions)
     override var valid: Boolean = true
 
     private val regionRef = UpstreamReference(region)
     private val userRef = UpstreamReference(user)
     private val _roles = Collections.newSetFromMap(WeakHashMap<RoleImpl, Boolean>())
 
-    private var updatePermission = false
-    private val _permissions = IntBitSet { Permission.getByOffset(it) }
+    private var updatePermission = true
+    internal val _permissions = IntBitSet { Permission.getByOffset(it) }
         get() {
             if (updatePermission) {
                 updatePermission = false
