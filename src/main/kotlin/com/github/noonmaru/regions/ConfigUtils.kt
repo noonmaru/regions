@@ -41,6 +41,21 @@ fun ConfigurationSection.getBox(path: String): RegionBox {
     )
 }
 
+fun ConfigurationSection.setBox(path: String, box: RegionBox) {
+    val section = createSection(path)
+
+    section.createSection("min").let { min ->
+        min["x"] = box.minX
+        min["y"] = box.minY
+        min["z"] = box.minZ
+    }
+    section.createSection("max").let { max ->
+        max["x"] = box.maxX
+        max["y"] = box.maxY
+        max["z"] = box.maxZ
+    }
+}
+
 fun ConfigurationSection.getSection(path: String): ConfigurationSection {
     return requireNotNull(getConfigurationSection(path)) { "Not found path $path" }
 }

@@ -1,5 +1,6 @@
 package com.github.noonmaru.regions.api
 
+import org.bukkit.Location
 import org.bukkit.util.BoundingBox
 import org.bukkit.util.Vector
 import kotlin.math.max
@@ -26,6 +27,10 @@ class RegionBox(minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int
 
     fun contains(x: Int, y: Int, z: Int): Boolean {
         return x in minX..maxX && y in minY..maxY && z in minZ..maxZ
+    }
+
+    fun contains(loc: Location): Boolean {
+        return contains(loc.blockX, loc.blockY, loc.blockZ)
     }
 
     fun overlaps(

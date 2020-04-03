@@ -10,7 +10,7 @@ interface User {
 
     val bukkitPlayer: Player?
 
-    val regionMembers: Collection<Member>
+    val regionMembers: List<Member>
 
     fun getMemberByRegion(region: Region): Member?
 

@@ -1,9 +1,9 @@
 package com.github.noonmaru.regions.internal
 
-import com.github.noonmaru.regions.api.*
-import com.github.noonmaru.regions.toEnumList
-import com.github.noonmaru.regions.toStringList
-import com.github.noonmaru.regions.util.IntBitSet
+import com.github.noonmaru.regions.api.Area
+import com.github.noonmaru.regions.api.Region
+import com.github.noonmaru.regions.api.RegionBox
+import com.github.noonmaru.regions.api.RegionWorld
 import com.github.noonmaru.regions.util.LongHash
 import com.github.noonmaru.regions.util.LongObjectHashMap
 import com.google.common.collect.ImmutableList
@@ -11,144 +11,108 @@ import org.bukkit.World
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.util.*
+import kotlin.collections.ArrayList
 
 class RegionWorldImpl(
-    private val manager: RegionManagerImpl,
-    override val name: String
-) : RegionWorld {
-    companion object {
-        private const val CFG_PROTECTIONS = "protections"
-    }
-
+    manager: RegionManagerImpl,
+    name: String
+) : AreaImpl(manager, name), RegionWorld {
+    override val file: File
+        get() = File(manager.worldsFolder, "$name.yml")
+    override val type: Area.Type
+        get() = Area.Type.WORLD
     override var bukkitWorld: World? = null
+        internal set
     override val regions: List<Region>
         get() = ImmutableList.copyOf(_regions)
-    override val protections: Set<Protection>
-        get() = Collections.unmodifiableSet(_protections.clone())
-    private val _regions: MutableSet<Region> = HashSet(0)
 
-    private val _protections = IntBitSet { Protection.getByOffset(it) }
-
-    private val chunks = LongObjectHashMap<RegionChunkImpl>()
-
-    private var mustBeSave = false
-
-    private val file: File
-        get() = File(manager.worldsFolder, "$name.yml")
-
-    override fun checkOverlap(box: RegionBox, except: Region?) {
-        val overlapList = getOverlapRegions(box, except)
-        require(overlapList.isEmpty()) { "Overlap with ${overlapList.joinToString { it.name }}" }
-    }
+    private val _regions = TreeSet<RegionImpl> { o1, o2 -> o1.name.compareTo(o2.name) }
+    private val _chunks = LongObjectHashMap<RegionChunkImpl>()
 
     internal fun placeRegion(region: RegionImpl, box: RegionBox = region.box) {
         _regions.add(region)
-        box.forEachChunks { x, z ->
-            getOrCreateChunkAt(x, z).addRegion(region)
+
+        box.forEach { chunkX, chunkZ ->
+            getOrGenerateChunk(chunkX, chunkZ).addRegion(region)
         }
+    }
+
+    private fun getOrGenerateChunk(chunkX: Int, chunkZ: Int): RegionChunkImpl {
+        val chunks = _chunks
+        val key = LongHash.toLong(chunkX, chunkZ)
+
+        var chunk = chunks.get(key)
+
+        if (chunk == null) {
+            chunk = RegionChunkImpl(this, chunkX, chunkZ).also {
+                chunks.put(key, it)
+            }
+        }
+
+        return chunk
     }
 
     internal fun removeRegion(region: RegionImpl) {
         _regions.remove(region)
 
-        val chunks = this.chunks
-
-        region.box.forEachChunks { x, z ->
-            val key = LongHash.toLong(x, z)
-            chunks.get(key)?.let { chunk ->
-                chunk.removeRegion(region)
-
-                if (chunk.isEmpty()) {
-                    chunks.remove(key)
-                }
-            }
+        region.box.forEach { chunkX, chunkZ ->
+            chunkAt(chunkX, chunkZ)?.removeRegion(region)
         }
     }
 
-    private fun getOrCreateChunkAt(x: Int, z: Int): RegionChunkImpl {
-        val chunks = this.chunks
-        val key = LongHash.toLong(x, z)
-
-        return chunks[key] ?: RegionChunkImpl(this, x, z).also { chunk ->
-            chunks.put(key, chunk)
-        }
+    override fun chunkAt(chunkX: Int, chunkZ: Int): RegionChunkImpl? {
+        return _chunks[LongHash.toLong(chunkX, chunkZ)]
     }
 
-    override fun chunkAt(x: Int, z: Int): RegionChunkImpl? {
-        return chunks.get(LongHash.toLong(x, z))
+    override fun regionAt(x: Int, y: Int, z: Int): RegionImpl? {
+        return chunkAt(x.toChunk(), z.toChunk())?.regionAt(x, y, z)
     }
 
-    override fun regionAt(x: Int, y: Int, z: Int): Region? {
-        return chunkAt(x shr 4, z shr 4)?.regionAt(x, y, z)
-    }
+    override fun getOverlapRegions(box: RegionBox, except: Region?): List<Region> {
+        val overlaps = ArrayList<RegionImpl>(0)
 
-    override fun getOverlapRegions(box: RegionBox, except: Region?): List<RegionImpl> {
-        val map = HashMap<RegionImpl, Boolean>(0)
-
-        box.forEachChunks { x, z ->
-            chunkAt(x, z)?._regions?.forEach { region ->
-                if (region !== except) {
-                    map.computeIfAbsent(region) {
-                        box.overlaps(it.box)
+        box.forEach { chunkX, chunkZ ->
+            chunkAt(chunkX, chunkZ)?.let { chunk ->
+                chunk._regions.forEach { region ->
+                    if (box.overlaps(region.box)) {
+                        overlaps += region
                     }
                 }
             }
         }
 
-        return ImmutableList.copyOf(map.keys)
+        return overlaps
     }
 
-    private inline fun RegionBox.forEachChunks(consumer: (x: Int, z: Int) -> Unit) {
-        val chunkMinX = minX shr 4
-        val chunkMinZ = minZ shr 4
-        val chunkMaxX = maxX shr 4
-        val chunkMaxZ = maxZ shr 4
+    companion object {
+        internal fun load(file: File, manager: RegionManagerImpl): RegionWorldImpl {
+            val name = file.name.removeSuffix(".yml")
+            val config = YamlConfiguration.loadConfiguration(file)
 
-        for (x in chunkMinX..chunkMaxX) {
-            for (z in chunkMinZ..chunkMaxZ) {
-                consumer(x, z)
+            return RegionWorldImpl(manager, name).apply {
+                load(config)
             }
         }
     }
+}
 
-    override fun hasProtection(protection: Protection): Boolean {
-        return _protections.contains(protection)
-    }
+fun RegionWorld.toImpl(): RegionWorldImpl {
+    return this as RegionWorldImpl
+}
 
-    override fun addProtection(protections: Collection<Protection>) {
-        _protections.addAll(protections)
-    }
+fun Int.toChunk(): Int {
+    return this shr 4
+}
 
-    override fun removeProtection(protections: Collection<Protection>) {
-        _protections.removeAll(protections)
-    }
+inline fun RegionBox.forEach(action: (chunkX: Int, chunkZ: Int) -> Unit) {
+    val chunkMinX = minX.toChunk()
+    val chunkMinZ = minZ.toChunk()
+    val chunkMaxX = maxX.toChunk()
+    val chunkMaxZ = maxZ.toChunk()
 
-    fun load(file: File) {
-        val config = YamlConfiguration.loadConfiguration(file)
-        val protections = config.getStringList(CFG_PROTECTIONS).toEnumList({ Protection.getByKey(it) }) { name ->
-            Regions.logger.warning("Unknown protection '$name' in world file '${file.name}'")
+    for (chunkX in chunkMinX..chunkMaxX) {
+        for (chunkZ in chunkMinZ..chunkMaxZ) {
+            action(chunkX, chunkZ)
         }
-
-        _protections.addAll(protections)
-    }
-
-    override fun save(): Boolean {
-        if (!mustBeSave) return false
-
-        val config = YamlConfiguration()
-        config[CFG_PROTECTIONS] = _protections.toStringList()
-        val file = file
-        file.parentFile.mkdirs()
-
-        val tempFile = File(file.parent, "${file.name}.tmp")
-        config.save(tempFile)
-        file.delete()
-        tempFile.renameTo(file)
-        mustBeSave = false
-        return true
-    }
-
-    fun setMustBeSave() {
-        this.mustBeSave = true
     }
 }

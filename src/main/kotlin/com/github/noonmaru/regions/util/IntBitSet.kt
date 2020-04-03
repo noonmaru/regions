@@ -10,6 +10,9 @@ interface Indexable {
 
 val Iterable<Indexable>.raws: Int
     get() {
+        if (this is IntBitSet<Indexable>)
+            return rawElements
+
         var raws = 0
 
         forEach {
@@ -19,7 +22,7 @@ val Iterable<Indexable>.raws: Int
         return raws
     }
 
-class IntBitSet<E : Indexable>(rawElements: Int = 0, private val converter: (offset: Int) -> E?) : MutableSet<E>,
+open class IntBitSet<E : Indexable>(rawElements: Int = 0, private val converter: (offset: Int) -> E?) : MutableSet<E>,
     Cloneable {
     var rawElements = rawElements
         private set

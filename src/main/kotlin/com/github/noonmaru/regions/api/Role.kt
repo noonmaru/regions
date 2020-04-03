@@ -1,7 +1,7 @@
 package com.github.noonmaru.regions.api
 
-interface Role : Permissible, Checkable, Deletable {
-    val parent: Organizable
-
+interface Role : Node, Permissible {
     val name: String
+
+    val isPublic: Boolean
 }

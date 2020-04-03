@@ -1,60 +1,50 @@
 package com.github.noonmaru.regions.api
 
-import com.github.noonmaru.regions.internal.RegionImpl
 import com.github.noonmaru.regions.internal.RegionManagerImpl
 import com.github.noonmaru.regions.plugin.RegionPlugin
-import com.github.noonmaru.tap.mojang.MojangProfile
 import org.bukkit.Location
-import org.bukkit.World
 import org.bukkit.block.Block
-import org.bukkit.entity.Player
-import java.util.*
+import org.bukkit.entity.Entity
 import java.util.logging.Logger
 
 object Regions {
-    lateinit var logger: Logger
-        private set
     lateinit var manager: RegionManager
         private set
 
-    val regions: List<Region>
-        get() = manager.regions
-
     internal fun initialize(plugin: RegionPlugin) {
-        logger = plugin.logger
-        manager = RegionManagerImpl(plugin, plugin.dataFolder)
-    }
-
-    fun createRegion(name: String, world: RegionWorld, box: RegionBox): Region {
-        return manager.createRegion(name, world, box)
-    }
-
-    fun getWorld(name: String): RegionWorld? {
-        return manager.getRegionWorld(name)
-    }
-
-    fun getRegion(name: String): RegionImpl? {
-        return manager.getRegion(name)
-    }
-
-    fun getUser(profile: MojangProfile): User {
-        return manager.getUser(profile)
-    }
-
-    fun getCachedUser(uniqueId: UUID): User? {
-        return manager.getUser(uniqueId)
+        Logger = plugin.logger
+        manager = RegionManagerImpl(plugin)
     }
 }
 
-val World.regionWorld: RegionWorld
-    get() = requireNotNull(Regions.manager.getRegionWorld(this)) { "Unloaded world $name" }
+internal lateinit var Logger: Logger
 
-val Player.user: User
-    get() = requireNotNull(Regions.manager.getUser(this)) { "Offline player $name" }
+internal fun warning(name: String) {
+    Logger.warning(name)
+}
+
+internal fun info(name: String) {
+    Logger.info(name)
+}
+
+val Block.area: Area
+    get() = requireNotNull(Regions.manager.areaAt(world, x, y, z)) {
+        "Failed to fetch area at ${world.name} $x $y $z"
+    }
 
 val Block.region: Region?
     get() = Regions.manager.regionAt(world, x, y, z)
 
+val Location.area: Area
+    get() = requireNotNull(Regions.manager.areaAt(world, blockX, blockY, blockZ)) {
+        "Failed to fetch area at ${world.name} $blockX $blockY $blockZ"
+    }
+
 val Location.region: Region?
     get() = Regions.manager.regionAt(world, blockX, blockY, blockZ)
 
+val Entity.area: Area
+    get() = location.area
+
+val Entity.region: Region?
+    get() = location.region

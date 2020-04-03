@@ -1,5 +1,7 @@
 package com.github.noonmaru.regions.api
 
-interface Deletable {
+interface Node : Checkable {
+    val parent: Area
+
     fun delete()
 }

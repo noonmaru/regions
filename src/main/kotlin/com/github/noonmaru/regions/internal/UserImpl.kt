@@ -9,23 +9,25 @@ import java.util.*
 
 class UserImpl(
     override val uniqueId: UUID,
-    override val name: String
+    override var name: String
 ) : User {
-    override var bukkitPlayer: Player? = null
-    override val regionMembers: Collection<Member>
-        get() = ImmutableList.copyOf(membersByRegion.values)
 
-    private val membersByRegion: MutableMap<RegionImpl, MemberImpl> = WeakHashMap(0)
+    override val bukkitPlayer: Player? = null
+
+    override val regionMembers: List<Member>
+        get() = ImmutableList.copyOf(_regionMembers)
+
+    private val _regionMembers = HashSet<Member>()
 
     override fun getMemberByRegion(region: Region): Member? {
-        return membersByRegion[region]
+        return _regionMembers.find { it.parent === region }
     }
 
-    internal fun addRegionMember(region: RegionImpl, member: MemberImpl) {
-        membersByRegion[region] = member
+    internal fun addMember(member: Member) {
+        _regionMembers.add(member)
     }
+}
 
-    internal fun removeRegionMember(region: RegionImpl) {
-        membersByRegion.remove(region)
-    }
+internal fun User.toImpl(): UserImpl {
+    return this as UserImpl
 }

@@ -9,8 +9,8 @@ import java.util.*
 enum class Protection(val key: String) : Indexable {
     DAMAGE("damage"),
     POTION("potion"),
-    IGNITION("ignition"),
-    BLOCK_MELT("melt"),
+    FIRE("fire"),
+    FADE("fade"),
     GROWTH("growth"),
     FORM("form"),
     SPREAD("blockSpread"),
@@ -52,22 +52,4 @@ enum class Protection(val key: String) : Indexable {
     override fun toString(): String {
         return key
     }
-}
-
-interface Protectable {
-    val protections: Set<Protection>
-
-    fun hasProtections(protection: Protection): Boolean
-
-    fun addProtections(vararg protections: Protection) {
-        addProtections(protections.asList())
-    }
-
-    fun addProtections(protections: Collection<Protection>)
-
-    fun removeProtections(vararg protections: Protection) {
-        removeProtections(protections.asList())
-    }
-
-    fun removeProtections(protections: Collection<Protection>)
 }

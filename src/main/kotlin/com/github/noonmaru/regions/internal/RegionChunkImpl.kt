@@ -1,38 +1,28 @@
 package com.github.noonmaru.regions.internal
 
-import com.github.noonmaru.regions.api.Region
 import com.github.noonmaru.regions.api.RegionChunk
 import com.github.noonmaru.regions.api.RegionWorld
-import com.github.noonmaru.regions.util.UpstreamReference
 import com.google.common.collect.ImmutableList
 
 class RegionChunkImpl(
-    world: RegionWorld,
+    override val world: RegionWorld,
     override val x: Int,
     override val z: Int
 ) : RegionChunk {
-
-    override val world: RegionWorld
-        get() = worldRef.get()
-    override val regions: List<Region>
+    override val regions: List<RegionImpl>
         get() = ImmutableList.copyOf(_regions)
 
-    private val worldRef = UpstreamReference(world)
-    internal val _regions: MutableList<RegionImpl> = ArrayList(0)
+    internal val _regions = ArrayList<RegionImpl>(1)
 
-    override fun regionAt(x: Int, y: Int, z: Int): Region? {
-        return regions.find { it.box.contains(x, y, z) }
+    override fun regionAt(x: Int, y: Int, z: Int): RegionImpl? {
+        return _regions.find { it.box.contains(x, y, z) }
     }
 
-    fun addRegion(region: RegionImpl) {
-        _regions.add(region)
+    internal fun addRegion(region: RegionImpl) {
+        _regions += region
     }
 
-    fun removeRegion(region: RegionImpl) {
-        _regions.remove(region)
-    }
-
-    fun isEmpty(): Boolean {
-        return _regions.isEmpty()
+    internal fun removeRegion(region: RegionImpl) {
+        _regions -= region
     }
 }

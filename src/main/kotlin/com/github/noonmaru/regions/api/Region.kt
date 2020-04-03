@@ -1,10 +1,8 @@
 package com.github.noonmaru.regions.api
 
 
-interface Region : Area, Checkable, Deletable {
-    val name: String
-
-    val world: RegionWorld
+interface Region : Node, Area, Checkable {
+    override val parent: RegionWorld
 
     val box: RegionBox
 
@@ -18,6 +16,7 @@ interface Region : Area, Checkable, Deletable {
 
     fun removeParent(region: Region): Boolean
 
-    fun save(): Boolean
+    fun getDirectAncestors(): Set<Region>
 
+    fun getAllDescendants(): Set<Region>
 }
