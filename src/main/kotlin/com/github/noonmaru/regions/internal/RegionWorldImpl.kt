@@ -11,7 +11,6 @@ import org.bukkit.World
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.util.*
-import kotlin.collections.ArrayList
 
 class RegionWorldImpl(
     manager: RegionManagerImpl,
@@ -68,13 +67,13 @@ class RegionWorldImpl(
         return chunkAt(x.toChunk(), z.toChunk())?.regionAt(x, y, z)
     }
 
-    override fun getOverlapRegions(box: RegionBox, except: Region?): List<Region> {
-        val overlaps = ArrayList<RegionImpl>(0)
+    override fun getOverlapRegions(box: RegionBox, except: Region?): Set<Region> {
+        val overlaps = LinkedHashSet<RegionImpl>(0)
 
         box.forEach { chunkX, chunkZ ->
             chunkAt(chunkX, chunkZ)?.let { chunk ->
                 chunk._regions.forEach { region ->
-                    if (box.overlaps(region.box)) {
+                    if (region !in overlaps && box.overlaps(region.box)) {
                         overlaps += region
                     }
                 }

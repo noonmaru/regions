@@ -82,6 +82,9 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
                 kotlin.runCatching {
                     loaders += RegionImpl.load(file, this).also { loader ->
                         val region = loader.region
+                        val world = region.parent
+                        world.checkOverlap(region.box)
+                        world.placeRegion(region)
                         _regionsByName[region.name] = region
                     }
                 }.onFailure { exception ->
@@ -137,6 +140,7 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
         return RegionImpl(this, name, worldImpl, box).also {
             _regionsByName[name] = it
             worldImpl.placeRegion(it)
+            it.setMustBeSave()
         }
     }
 

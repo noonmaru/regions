@@ -233,7 +233,7 @@ abstract class AreaImpl(
         return _memberByUser[(manager.getUser(player))]?._permissions ?: emptyPermissions
     }
 
-    protected fun setMustBeSave() {
+    internal fun setMustBeSave() {
         mustBeSave = true
     }
 
@@ -247,10 +247,9 @@ abstract class AreaImpl(
         val parentFile = file.parentFile
         val temp = File(parentFile, "{${file.name}.tmp")
 
-        parentFile.mkdirs()
-
         config.runCatching {
-            save(file)
+            parentFile.mkdirs()
+            save(temp)
             file.delete()
             temp.renameTo(file)
         }.onSuccess {

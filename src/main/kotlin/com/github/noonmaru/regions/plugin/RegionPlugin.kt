@@ -1,6 +1,8 @@
 package com.github.noonmaru.regions.plugin
 
+import com.github.noonmaru.kommand.kommand
 import com.github.noonmaru.regions.api.Regions
+import com.github.noonmaru.regions.commands.RegionCommand
 import org.bukkit.plugin.java.JavaPlugin
 
 /**
@@ -12,6 +14,14 @@ class RegionPlugin : JavaPlugin() {
 
         server.pluginManager.apply {
             registerEvents(EventListener(), this@RegionPlugin)
+        }
+
+        setupCommands()
+    }
+
+    private fun setupCommands() {
+        kommand {
+            RegionCommand.register(this)
         }
     }
 

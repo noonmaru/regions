@@ -11,7 +11,7 @@ interface RegionWorld : Area {
 
     fun regionAt(x: Int, y: Int, z: Int): Region?
 
-    fun getOverlapRegions(box: RegionBox, except: Region? = null): List<Region>
+    fun getOverlapRegions(box: RegionBox, except: Region? = null): Set<Region>
 
     fun checkOverlap(box: RegionBox, except: Region? = null) {
         getOverlapRegions(box, except).let { overlaps ->
