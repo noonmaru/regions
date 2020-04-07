@@ -12,7 +12,8 @@ class UserImpl(
     override var name: String
 ) : User {
 
-    override val bukkitPlayer: Player? = null
+    override var bukkitPlayer: Player? = null
+        internal set
 
     override val regionMembers: List<Member>
         get() = ImmutableList.copyOf(_regionMembers)

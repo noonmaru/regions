@@ -145,8 +145,24 @@ class RegionImpl(
             if (it) {
                 regionImpl._children.add(this)
                 setMustBeSave()
-                clearPlayerPermissions()
+                resetAllPlayerPermissions()
             }
+        }
+    }
+
+    override fun resetPlayerPermissions(player: Player) {
+        super.resetPlayerPermissions(player)
+
+        for (child in getAllDescendants()) {
+            child.resetPlayerPermissions(player)
+        }
+    }
+
+    override fun resetAllPlayerPermissions() {
+        super.resetAllPlayerPermissions()
+
+        for (child in getAllDescendants()) {
+            child.resetAllPlayerPermissions()
         }
     }
 
@@ -154,14 +170,10 @@ class RegionImpl(
         checkState()
 
         return _parents.remove(region).also {
-            setMustBeSave()
-            clearPlayerPermissions()
             region.toImpl()._children.remove(this)
+            setMustBeSave()
+            resetAllPlayerPermissions()
         }
-    }
-
-    private fun clearPlayerPermissions() {
-        playerPermissions.clear()
     }
 
     override fun computePlayerPermissions(player: Player): PermissionSet {
@@ -181,9 +193,10 @@ class RegionImpl(
                 permissions.and(parent)
         }
 
-        getMember(user)?.let { member ->
-            permissions.or(member._permissions)
-        }
+        val member = getMember(user)
+        val memberPermissions = member?._permissions ?: publicRole._permissions
+
+        permissions.or(memberPermissions)
 
         return permissions
     }

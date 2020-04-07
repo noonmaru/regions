@@ -1,10 +1,13 @@
-package com.github.noonmaru.regions.commands
+package com.github.noonmaru.regions.command
 
-import com.github.noonmaru.kommand.*
+import com.github.noonmaru.kommand.KommandContext
+import com.github.noonmaru.kommand.KommandDispatcherBuilder
+import com.github.noonmaru.kommand.KommandSyntaxException
 import com.github.noonmaru.kommand.argument.KommandArgument
 import com.github.noonmaru.kommand.argument.integer
 import com.github.noonmaru.kommand.argument.string
 import com.github.noonmaru.kommand.argument.suggestions
+import com.github.noonmaru.kommand.sendFeedback
 import com.github.noonmaru.regions.api.Region
 import com.github.noonmaru.regions.api.RegionBox
 import com.github.noonmaru.regions.api.Regions

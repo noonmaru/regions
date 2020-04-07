@@ -9,6 +9,14 @@ import com.google.common.collect.MapMaker
 import org.bukkit.Bukkit
 import org.bukkit.World
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
+import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.world.WorldInitEvent
+import org.bukkit.event.world.WorldLoadEvent
+import org.bukkit.event.world.WorldUnloadEvent
 import java.io.File
 import java.util.*
 
@@ -40,6 +48,10 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
         loadUsers()
         loadWorlds()
         loadRegions()
+
+        plugin.server.pluginManager.apply {
+            registerEvents(InternalListener(), plugin)
+        }
     }
 
     private fun loadUsers() {
@@ -54,8 +66,10 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
     private fun loadWorlds() {
         worldsFolder.listFiles { file: File -> !file.isDirectory && file.name.endsWith(".yml") }?.let { files ->
             for (file in files) {
-                kotlin.runCatching {
-                    RegionWorldImpl.load(file, this)
+                RegionWorldImpl.runCatching {
+                    load(file, this@RegionManagerImpl)
+                }.onSuccess { regionWorld ->
+                    _worldsByName[regionWorld.name] = regionWorld
                 }.onFailure { exception ->
                     exception.printStackTrace()
                     warning("Failed to load world for [${file.name}]")
@@ -108,8 +122,12 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
     }
 
     override fun getUser(profile: MojangProfile): UserImpl {
-        return _usersByUniqueId.computeIfAbsent(profile.uniqueId) {
-            UserImpl(it, profile.name)
+        return getOrCreateUser(profile.uniqueId, profile.name)
+    }
+
+    private fun getOrCreateUser(uniqueId: UUID, name: String): UserImpl {
+        return _usersByUniqueId.computeIfAbsent(uniqueId) {
+            UserImpl(it, name)
         }
     }
 
@@ -173,6 +191,53 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
         }
         for (region in _regionsByName.values) {
             region.save()
+        }
+    }
+
+    private inner class InternalListener : Listener {
+        @EventHandler(priority = EventPriority.LOWEST)
+        fun onJoin(event: PlayerJoinEvent) {
+            val player = event.player
+            val user = getOrCreateUser(player.uniqueId, player.name).apply {
+                bukkitPlayer = player
+            }
+
+            _usersByPlayer[player] = user
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR)
+        fun onQuit(event: PlayerQuitEvent) {
+            _usersByPlayer.remove(event.player)?.apply {
+                bukkitPlayer = null
+            }
+        }
+
+        @EventHandler(priority = EventPriority.LOWEST)
+        fun onWorldInit(event: WorldInitEvent) {
+            val world = event.world
+            getOrRegisterRegionWorld(world.name).apply {
+                bukkitWorld = world
+                _worldsByBukkitWorld[world] = this
+            }
+        }
+
+        @EventHandler(priority = EventPriority.LOWEST)
+        fun onWorldLoad(event: WorldLoadEvent) {
+            val world = event.world
+            getOrRegisterRegionWorld(world.name).apply {
+                if (bukkitWorld == null) {
+                    bukkitWorld = world
+                    _worldsByBukkitWorld[world] = this
+                }
+            }
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR)
+        fun onWorldUnload(event: WorldUnloadEvent) {
+            val world = event.world
+            _worldsByBukkitWorld.remove(world)?.apply {
+                bukkitWorld = null
+            }
         }
     }
 }

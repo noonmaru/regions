@@ -2,8 +2,8 @@ package com.github.noonmaru.regions.plugin
 
 import com.github.noonmaru.kommand.kommand
 import com.github.noonmaru.regions.api.Regions
-import com.github.noonmaru.regions.commands.AreaCommands
-import com.github.noonmaru.regions.commands.RegionCommands
+import com.github.noonmaru.regions.command.AreaCommands
+import com.github.noonmaru.regions.command.RegionCommands
 import org.bukkit.plugin.java.JavaPlugin
 
 /**

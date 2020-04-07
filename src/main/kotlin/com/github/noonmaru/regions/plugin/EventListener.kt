@@ -1,6 +1,9 @@
 package com.github.noonmaru.regions.plugin
 
-import com.github.noonmaru.regions.api.*
+import com.github.noonmaru.regions.api.Permission
+import com.github.noonmaru.regions.api.Protection
+import com.github.noonmaru.regions.api.Region
+import com.github.noonmaru.regions.api.area
 import org.bukkit.World
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -41,10 +44,12 @@ class EventListener : Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onPlayerInteract(event: PlayerInteractEvent) {
         val player = event.player
+
         if (player.hasMasterKey()) return
 
         event.clickedBlock?.let { clickedBlock ->
             val area = clickedBlock.area
+
             if (!area.testPermission(player, Permission.INTERACTION))
                 event.isCancelled = true
 
@@ -101,6 +106,16 @@ class EventListener : Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onBlockCanBuild(event: BlockCanBuildEvent) {
+        val player = event.player
+        if (player == null || player.hasMasterKey()) return
+
+        if (!event.block.area.testPermission(player, Permission.BLOCK_PLACE)) {
+            event.isBuildable = false
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onBlockBreak(event: BlockBreakEvent) {
         val player = event.player
         if (player.hasMasterKey()) return
@@ -126,10 +141,12 @@ class EventListener : Listener {
         val player = event.player
 
         if (player == null) {
-            if (!area.hasProtection(Protection.FIRE)) {
+            if (area.hasProtection(Protection.FIRE)) {
                 event.isCancelled = true
             }
         } else {
+            if (player.hasMasterKey()) return
+
             if (!area.testPermission(player, Permission.BLOCK_IGNITING)) {
                 event.isCancelled = true
             }
@@ -198,31 +215,33 @@ class EventListener : Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    fun onPlayerPickupItem(event: PlayerAttemptPickupItemEvent) {
-        val player = event.player
-        if (player.hasMasterKey()) return
+    fun onPlayerPickupItem(event: EntityPickupItemEvent) {
+        val entity = event.entity
 
-        if (!event.item.area.testPermission(player, Permission.PICKUP_ITEM)) {
-            event.isCancelled = true
+        if (entity is Player) {
+            if (entity.hasMasterKey()) return
+
+            val item = event.item
+
+            if (!item.area.testPermission(entity, Permission.PICKUP_ITEM)) {
+                event.isCancelled = true
+                item.pickupDelay = 10
+            }
+        } else {
+            val item = event.item
+
+            if (item.area.hasProtection(Protection.ENTITY_PICKUP_ITEM)) {
+                event.isCancelled = true
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onPotionSplash(event: PotionSplashEvent) {
-        var area: Area? = null
-
         for (affectedEntity in event.affectedEntities) {
-            if (area == null) {
-                area = affectedEntity.area
-            } else {
-                if (area is RegionWorld
-                    || (area is Region && !area.box.contains(affectedEntity.location))
-                ) {
-                    area = affectedEntity.area
-                }
-            }
+            val area = affectedEntity.area
 
-            if (!area.hasProtection(Protection.POTION)) {
+            if (area.hasProtection(Protection.POTION)) {
                 event.setIntensity(affectedEntity, 0.0)
             }
         }
@@ -287,6 +306,88 @@ class EventListener : Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onBlockPistonExtend(event: BlockPistonExtendEvent) {
+        val direction = event.direction
+        val piston = event.block
+        val head = piston.getRelative(direction)
+
+        val pistonArea = piston.area
+        val headArea = head.area
+        val pistonProtection = pistonArea.hasProtection(Protection.PISTON)
+
+        if (pistonArea !== headArea
+            && (pistonProtection || headArea.hasProtection(Protection.PISTON))
+        ) {
+            event.isCancelled = true
+            return
+        }
+
+        if (pistonProtection) {
+            for (block in event.blocks) {
+                if (block.area !== pistonArea || block.getRelative(direction).area !== pistonArea) {
+                    event.isCancelled = true
+                    break
+                }
+            }
+        } else {
+            for (block in event.blocks) {
+                val blockArea = block.area
+
+                if (blockArea !== pistonArea && blockArea.hasProtection(Protection.PISTON)) {
+                    event.isCancelled = true
+                    break
+                }
+
+                val toBlockArea = block.getRelative(direction).area
+
+                if (toBlockArea !== pistonArea && toBlockArea.hasProtection(Protection.PISTON)) {
+                    event.isCancelled = true
+                    break
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onBlockPistonRetract(event: BlockPistonRetractEvent) {
+        val blocks = event.blocks
+
+        if (blocks.isEmpty())
+            return
+
+        val direction = event.direction
+        val piston = event.block
+        val pistonArea = piston.area
+        val pistonProtection = pistonArea.hasProtection(Protection.PISTON)
+
+
+        if (pistonProtection) {
+            for (block in event.blocks) {
+                if (block.area !== pistonArea || block.getRelative(direction).area !== pistonArea) {
+                    event.isCancelled = true
+                    break
+                }
+            }
+        } else {
+            for (block in event.blocks) {
+                val blockArea = block.area
+
+                if (blockArea !== pistonArea && blockArea.hasProtection(Protection.PISTON)) {
+                    event.isCancelled = true
+                    break
+                }
+
+                val toBlockArea = block.getRelative(direction).area
+
+                if (toBlockArea !== pistonArea && toBlockArea.hasProtection(Protection.PISTON)) {
+                    event.isCancelled = true
+                    break
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onBlockFromTo(event: BlockFromToEvent) {
         val from = event.block.area
         val to = event.toBlock.area
@@ -312,7 +413,9 @@ class EventListener : Listener {
         if (event.entity.area.hasProtection(Protection.EXPLOSION)) {
             event.isCancelled = true
         } else {
-            event.blockList().removeIf { it.area.hasProtection(Protection.EXPLOSION) }
+            event.blockList().removeIf { block ->
+                block.area.hasProtection(Protection.EXPLOSION)
+            }
         }
     }
 

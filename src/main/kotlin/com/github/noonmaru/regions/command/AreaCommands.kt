@@ -1,10 +1,9 @@
-package com.github.noonmaru.regions.commands
+package com.github.noonmaru.regions.command
 
 import com.github.noonmaru.kommand.KommandContext
 import com.github.noonmaru.kommand.KommandDispatcherBuilder
 import com.github.noonmaru.kommand.argument.KommandArgument
 import com.github.noonmaru.kommand.argument.KommandArgument.Companion.TOKEN
-import com.github.noonmaru.kommand.argument.StringArgument
 import com.github.noonmaru.kommand.argument.string
 import com.github.noonmaru.kommand.argument.suggestions
 import com.github.noonmaru.kommand.sendFeedback
@@ -84,7 +83,7 @@ class RoleArgument(
     override fun parse(context: KommandContext, param: String): Role? {
         val area = context.parseOrNullArgument<Area>(areaArgumentName)
 
-        return area.getRole(param).takeIf {
+        return area?.getRole(param)?.takeIf {
             if (withPublicRole)
                 true
             else

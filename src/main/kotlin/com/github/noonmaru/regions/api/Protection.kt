@@ -15,8 +15,10 @@ enum class Protection(val key: String) : Indexable {
     FORM("form"),
     SPREAD("blockSpread"),
     REDSTONE("redstone"),
+    PISTON("piston"),
     OVERFLOW("overflow"),
     FLOOD("flood"),
+    ENTITY_PICKUP_ITEM("entityPickupItem"),
     ENTITY_CHANGE_BLOCK("entityChangeBlock"),
     EXPLOSION("explosion");
 
@@ -35,7 +37,6 @@ enum class Protection(val key: String) : Indexable {
             for (value in values()) {
                 byKey[value.key] = value
             }
-
             this.byKey = ImmutableSortedMap.copyOf(byKey)
         }
 

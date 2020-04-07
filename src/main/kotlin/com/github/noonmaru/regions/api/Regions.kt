@@ -3,8 +3,10 @@ package com.github.noonmaru.regions.api
 import com.github.noonmaru.regions.internal.RegionManagerImpl
 import com.github.noonmaru.regions.plugin.RegionPlugin
 import org.bukkit.Location
+import org.bukkit.World
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import java.util.logging.Logger
 
 object Regions {
@@ -26,6 +28,12 @@ internal fun warning(name: String) {
 internal fun info(name: String) {
     Logger.info(name)
 }
+
+val Player.user: User
+    get() = requireNotNull(Regions.manager.getUser(this)) { "$name is unregistered bukkit player" }
+
+val World.regionWorld: RegionWorld
+    get() = requireNotNull(Regions.manager.getRegionWorld(this)) { "$name is unregistered bukkit world" }
 
 val Block.area: Area
     get() = requireNotNull(Regions.manager.areaAt(world, x, y, z)) {

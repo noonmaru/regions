@@ -82,16 +82,9 @@ abstract class AreaImpl(
         require(name != PUBLIC_ROLE_NAME) { "Cannot remove $PUBLIC_ROLE_NAME" }
 
         return _rolesByName.remove(name)?.also { role ->
-            for ((user, member) in _memberByUser) {
-                if (member.removeRole(role)) {
-                    user.bukkitPlayer?.let { player ->
-                        resetPlayerPermissions(player)
-                    }
-                }
-            }
-
             role.destroy()
             setMustBeSave()
+            resetAllPlayerPermissions()
         }
     }
 
@@ -106,7 +99,7 @@ abstract class AreaImpl(
         return role.toImpl().addPermissions(permissions).also {
             if (it) {
                 setMustBeSave()
-                resetPlayerPermissions(role)
+                resetAllPlayerPermissions()
             }
         }
     }
@@ -117,7 +110,7 @@ abstract class AreaImpl(
         return role.toImpl().removePermissions(permissions).also {
             if (it) {
                 setMustBeSave()
-                resetPlayerPermissions(role)
+                resetAllPlayerPermissions()
             }
         }
     }
@@ -141,6 +134,8 @@ abstract class AreaImpl(
     override fun addMember(user: User): Member {
         require(user !in _memberByUser) { "Already added user" }
 
+        user.bukkitPlayer?.let { resetPlayerPermissions(it) }
+
         val impl = user.toImpl()
 
         return MemberImpl(this, impl).also { member ->
@@ -160,8 +155,9 @@ abstract class AreaImpl(
     }
 
     override fun removeMember(user: User): Member? {
-        return _memberByUser.remove(user)?.also {
-            it.destroy()
+        return _memberByUser.remove(user)?.also { removed ->
+            removed.destroy()
+            user.bukkitPlayer?.let { resetPlayerPermissions(it) }
             setMustBeSave()
         }
     }
@@ -172,13 +168,10 @@ abstract class AreaImpl(
 
         if (_publicRole == role) return false
 
-        return member.toImpl().addRole(role).also {
-            if (it) {
+        return member.toImpl().addRole(role).also { success ->
+            if (success) {
                 setMustBeSave()
-
-                member.user.bukkitPlayer?.let { player ->
-                    resetPlayerPermissions(player)
-                }
+                member.user.bukkitPlayer?.let { resetPlayerPermissions(it) }
             }
         }
     }
@@ -189,13 +182,10 @@ abstract class AreaImpl(
 
         if (_publicRole == role) return false
 
-        return member.toImpl().removeRole(role).also {
-            if (it) {
+        return member.toImpl().removeRole(role).also { success ->
+            if (success) {
                 setMustBeSave()
-
-                member.user.bukkitPlayer?.let { player ->
-                    resetPlayerPermissions(player)
-                }
+                member.user.bukkitPlayer?.let { resetPlayerPermissions(it) }
             }
         }
     }
@@ -208,18 +198,12 @@ abstract class AreaImpl(
         return getOrComputePlayerPermissions(player).containsAll(permissions)
     }
 
-    private fun resetPlayerPermissions(player: Player) {
+    internal open fun resetPlayerPermissions(player: Player) {
         playerPermissions.remove(player)
     }
 
-    private fun resetPlayerPermissions(role: Role) {
-        for ((user, member) in _memberByUser.entries) {
-            if (member.hasRole(role)) {
-                user.bukkitPlayer?.let { player ->
-                    resetPlayerPermissions(player)
-                }
-            }
-        }
+    internal open fun resetAllPlayerPermissions() {
+        playerPermissions.clear()
     }
 
     override fun getPlayerPermissions(player: Player): Set<Permission> {
@@ -233,8 +217,6 @@ abstract class AreaImpl(
     }
 
     companion object {
-        private val emptyPermissions = PermissionSet()
-
         private const val PUBLIC_ROLE_NAME = "@everyone"
 
         private const val CFG_PROTECTIONS = "protections"
@@ -244,7 +226,7 @@ abstract class AreaImpl(
     }
 
     protected open fun computePlayerPermissions(player: Player): PermissionSet {
-        return _memberByUser[(manager.getUser(player))]?._permissions ?: emptyPermissions
+        return _memberByUser[(manager.getUser(player))]?._permissions ?: _publicRole._permissions
     }
 
     internal fun setMustBeSave() {

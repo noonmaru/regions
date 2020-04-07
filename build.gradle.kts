@@ -1,6 +1,7 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "5.2.0"
     kotlin("jvm") version "1.3.61"
+    `maven-publish`
 }
 
 group = properties["pluginGroup"]!!
@@ -21,7 +22,7 @@ dependencies {
     compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0") //protocollib
     compileOnly("com.github.noonmaru:tap:2.3.3") //tap
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.1.0") //worldedit
-    implementation("com.github.noonmaru:kommand:0.1.8")
+    implementation("com.github.noonmaru:kommand:0.1.9")
 
     testCompileOnly("junit:junit:4.12") //junit
 }
@@ -45,11 +46,25 @@ tasks {
         }
     }
     shadowJar {
-        relocate("com.github.noonmaru.kommand", "com.github.noonmaru.regions.kommand")
+        relocate("com.github.noonmaru.kommand", "com.github.noonmaru.regions.shaded")
         archiveClassifier.set("dist")
+    }
+    create<Jar>("sourcesJar") {
+        archiveClassifier.set("sources")
+        from(sourceSets["main"].allSource)
     }
     create<Copy>("distJar") {
         from(shadowJar)
         into("W:\\Servers\\test\\plugins")
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("Regions") {
+            artifactId = project.name
+            from(components["java"])
+            artifact(tasks["sourcesJar"])
+        }
     }
 }
