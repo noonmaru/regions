@@ -21,7 +21,7 @@ dependencies {
     compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0") //protocollib
     compileOnly("com.github.noonmaru:tap:2.3.3") //tap
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.1.0") //worldedit
-    implementation("com.github.noonmaru:kommand:0.1.2")
+    implementation("com.github.noonmaru:kommand:0.1.8")
 
     testCompileOnly("junit:junit:4.12") //junit
 }

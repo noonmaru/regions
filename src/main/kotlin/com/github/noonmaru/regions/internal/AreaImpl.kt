@@ -18,17 +18,17 @@ abstract class AreaImpl(
 
     override val protections: Set<Protection>
         get() = Collections.unmodifiableSet(_protections)
-    override val publicRole: Role
+    override val publicRole: RoleImpl
         get() = _publicRole
-    override val roles: List<Role>
+    override val roles: List<RoleImpl>
         get() = ImmutableList.copyOf(_rolesByName.values)
-    override val members: List<Member>
+    override val members: List<MemberImpl>
         get() = ImmutableList.copyOf(_memberByUser.values)
 
     private val _protections = ProtectionSet()
 
     @Suppress("LeakingThis")
-    private val _publicRole = RoleImpl(this, "@everyone", true)
+    private val _publicRole = RoleImpl(this, PUBLIC_ROLE_NAME, true)
     private val _rolesByName = TreeMap<String, RoleImpl>()
     private val _memberByUser = LinkedHashMap<UserImpl, MemberImpl>(0)
 
@@ -56,6 +56,9 @@ abstract class AreaImpl(
     }
 
     override fun getRole(name: String): RoleImpl? {
+        if (name == PUBLIC_ROLE_NAME)
+            return publicRole
+
         return _rolesByName[name]
     }
 
@@ -67,7 +70,7 @@ abstract class AreaImpl(
     }
 
     override fun registerNewRole(name: String): Role {
-        require(name !in _rolesByName) { "Name is already in use" }
+        require(name != PUBLIC_ROLE_NAME && name !in _rolesByName) { "Name is already in use" }
 
         return RoleImpl(this, name).also {
             _rolesByName[name] = it
@@ -76,6 +79,8 @@ abstract class AreaImpl(
     }
 
     override fun removeRole(name: String): Role? {
+        require(name != PUBLIC_ROLE_NAME) { "Cannot remove $PUBLIC_ROLE_NAME" }
+
         return _rolesByName.remove(name)?.also { role ->
             for ((user, member) in _memberByUser) {
                 if (member.removeRole(role)) {
@@ -155,12 +160,17 @@ abstract class AreaImpl(
     }
 
     override fun removeMember(user: User): Member? {
-        return _memberByUser.remove(user)?.also { it.destroy() }
+        return _memberByUser.remove(user)?.also {
+            it.destroy()
+            setMustBeSave()
+        }
     }
 
     override fun addRoleToMember(member: Member, role: Role): Boolean {
         member.check()
         role.check()
+
+        if (_publicRole == role) return false
 
         return member.toImpl().addRole(role).also {
             if (it) {
@@ -176,6 +186,8 @@ abstract class AreaImpl(
     override fun removeRoleFromMember(member: Member, role: Role): Boolean {
         member.check()
         role.check()
+
+        if (_publicRole == role) return false
 
         return member.toImpl().removeRole(role).also {
             if (it) {
@@ -223,10 +235,12 @@ abstract class AreaImpl(
     companion object {
         private val emptyPermissions = PermissionSet()
 
-        const val CFG_PROTECTIONS = "protections"
-        const val CFG_PUBLIC_ROLE = "public-role"
-        const val CFG_ROLES = "roles"
-        const val CFG_MEMBERS = "members"
+        private const val PUBLIC_ROLE_NAME = "@everyone"
+
+        private const val CFG_PROTECTIONS = "protections"
+        private const val CFG_PUBLIC_ROLE = "public-role"
+        private const val CFG_ROLES = "roles"
+        private const val CFG_MEMBERS = "members"
     }
 
     protected open fun computePlayerPermissions(player: Player): PermissionSet {
@@ -260,7 +274,7 @@ abstract class AreaImpl(
         return false
     }
 
-    protected open fun save(config: ConfigurationSection) {
+    override fun save(config: ConfigurationSection) {
         //save protections
         config[CFG_PROTECTIONS] = _protections.toStringList()
 
@@ -296,6 +310,11 @@ abstract class AreaImpl(
         //load roles
         config.getConfigurationSection(CFG_ROLES)?.let { rolesSection ->
             for ((name, roleSection) in rolesSection.getValues(false)) {
+                if (name == PUBLIC_ROLE_NAME) {
+                    warning("Invalid role name [$PUBLIC_ROLE_NAME] at $type $[${this.name}]")
+                    continue
+                }
+
                 if (roleSection is ConfigurationSection) {
                     RoleImpl(this, name).apply {
                         load(roleSection)

@@ -90,13 +90,14 @@ class MemberImpl(
         val roleNames = config.getStringList(CFG_ROLES)
 
         for (roleName in roleNames) {
-            parent.getRole(roleName)?.also { role ->
+            parent.getRole(roleName)?.takeIf { !it.isPublic }?.also { role ->
                 _roles.add(role)
-            } ?: warning("Unknown role in [${user.name}] at ${parent.type} [${parent.name}]")
+            } ?: warning("Unknown [$roleName] role in [${user.name}] at ${parent.type} [${parent.name}]")
         }
     }
 
     internal fun save(config: ConfigurationSection) {
+        config["name"] = user.name
         config[CFG_ROLES] = _roles.map { it.name }
     }
 

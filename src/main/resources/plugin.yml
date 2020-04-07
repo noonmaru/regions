@@ -5,7 +5,10 @@ api-version: '1.13'
 version: $pluginVersion
 commands:
   region:
-    usage: /<command> help
+    usage: /<command>
+  area:
+    usage: /<command>
+
 permissions:
   regions.*:
     default: op

@@ -1,5 +1,6 @@
 package com.github.noonmaru.regions.api
 
+import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.entity.Player
 import java.util.*
 
@@ -89,6 +90,8 @@ interface Area {
     fun testPermissions(player: Player, permissions: Collection<Permission>): Boolean
 
     fun save(): Boolean
+
+    fun save(config: ConfigurationSection)
 
     enum class Type(private val toString: String) {
         WORLD("world"),

@@ -127,7 +127,9 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
 
     internal fun getOrRegisterRegionWorld(name: String): RegionWorldImpl {
         return _worldsByName.computeIfAbsent(name) {
-            RegionWorldImpl(this, it)
+            RegionWorldImpl(this, it).apply {
+                setMustBeSave()
+            }
         }
     }
 
@@ -137,16 +139,17 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
         world.checkOverlap(box, null)
         val worldImpl = world.toImpl()
 
-        return RegionImpl(this, name, worldImpl, box).also {
-            _regionsByName[name] = it
-            worldImpl.placeRegion(it)
-            it.setMustBeSave()
+        return RegionImpl(this, name, worldImpl, box).apply {
+            _regionsByName[name] = this
+            worldImpl.placeRegion(this)
+            setMustBeSave()
         }
     }
 
     override fun removeRegion(name: String): RegionImpl? {
-        return _regionsByName.remove(name)?.also {
-            it.destroy()
+        return _regionsByName.remove(name)?.also { region ->
+            region.parent.removeRegion(region)
+            region.destroy()
         }
     }
 

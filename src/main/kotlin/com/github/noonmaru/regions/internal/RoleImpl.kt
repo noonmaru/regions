@@ -66,6 +66,10 @@ class RoleImpl(
     internal fun destroy() {
         valid = false
     }
+
+    override fun toString(): String {
+        return "$name ${permissions.joinToString(prefix = "[", postfix = "]") { it.key }}"
+    }
 }
 
 internal fun Role.toImpl(): RoleImpl {
