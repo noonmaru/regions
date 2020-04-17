@@ -16,11 +16,13 @@ enum class Protection(val key: String) : Indexable {
     SPREAD("blockSpread"),
     REDSTONE("redstone"),
     PISTON("piston"),
+    DISPENSER("dispenser"),
     OVERFLOW("overflow"),
     FLOOD("flood"),
     ENTITY_PICKUP_ITEM("entityPickupItem"),
     ENTITY_CHANGE_BLOCK("entityChangeBlock"),
-    EXPLOSION("explosion");
+    EXPLOSION("explosion"),
+    ITEM_TRANSFER("itemTransfer");
 
     override val offset: Int
         get() = ordinal

@@ -5,6 +5,9 @@ import com.github.noonmaru.regions.api.Protection
 import com.github.noonmaru.regions.api.Region
 import com.github.noonmaru.regions.api.area
 import org.bukkit.World
+import org.bukkit.block.Container
+import org.bukkit.block.Dispenser
+import org.bukkit.block.data.Directional
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Projectile
@@ -15,8 +18,10 @@ import org.bukkit.event.block.*
 import org.bukkit.event.entity.*
 import org.bukkit.event.hanging.HangingBreakByEntityEvent
 import org.bukkit.event.hanging.HangingPlaceEvent
+import org.bukkit.event.inventory.InventoryMoveItemEvent
 import org.bukkit.event.player.*
 import org.bukkit.event.world.StructureGrowEvent
+import org.bukkit.projectiles.BlockProjectileSource
 
 private fun Player.hasMasterKey(): Boolean {
     return hasPermission("regions.action")
@@ -27,16 +32,44 @@ class EventListener : Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onPlayerMove(event: PlayerMoveEvent) {
         val player = event.player
+        val toLoc = event.to
+
         if (player.hasMasterKey()) return
 
         val from = event.from.area
-        val to = event.to.area
+        val to = toLoc!!.area
 
         if (from !== to) {
             if (!from.testPermission(player, Permission.EXIT) ||
                 !to.testPermission(player, Permission.ENTRANCE)
             ) {
                 event.isCancelled = true
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onPlayerTeleport(event: PlayerTeleportEvent) {
+        val cause = event.cause
+
+        if (cause == PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT
+            || cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL
+        ) {
+
+            val player = event.player
+            val toLoc = event.to
+
+            if (player.hasMasterKey()) return
+
+            val from = event.from.area
+            val to = toLoc!!.area
+
+            if (from !== to) {
+                if (!from.testPermission(player, Permission.EXIT) ||
+                    !to.testPermission(player, Permission.ENTRANCE)
+                ) {
+                    event.isCancelled = true
+                }
             }
         }
     }
@@ -57,6 +90,19 @@ class EventListener : Listener {
         }
 
         if (!player.area.testPermission(player, Permission.INTERACTION)) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onPlayerInteractEntity(event: PlayerInteractEntityEvent) {
+        val player = event.player
+
+        if (player.hasMasterKey()) return
+
+        val target = event.rightClicked
+
+        if (!target.area.testPermission(player, Permission.INTERACTION)) {
             event.isCancelled = true
         }
     }
@@ -100,6 +146,13 @@ class EventListener : Listener {
             if (shooter.hasMasterKey()) return
 
             if (!projectile.area.testPermission(shooter, Permission.PROJECTILE_LAUNCH)) {
+                event.isCancelled = true
+            }
+        } else if (shooter is BlockProjectileSource) {
+            val block = shooter.block
+            val area = block.area
+
+            if (area.hasProtection(Protection.DISPENSER)) {
                 event.isCancelled = true
             }
         }
@@ -244,6 +297,20 @@ class EventListener : Listener {
             if (area.hasProtection(Protection.POTION)) {
                 event.setIntensity(affectedEntity, 0.0)
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onLingeringPotionSplash(event: LingeringPotionSplashEvent) {
+        if (event.areaEffectCloud.area.hasProtection(Protection.POTION)) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onAreaEffectCloudApply(event: AreaEffectCloudApplyEvent) {
+        event.affectedEntities.removeIf { entity ->
+            entity.area.hasProtection(Protection.POTION)
         }
     }
 
@@ -422,5 +489,42 @@ class EventListener : Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onBlockExplode(event: BlockExplodeEvent) {
         event.blockList().removeIf { it.area.hasProtection(Protection.EXPLOSION) }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onBlockDispense(event: BlockDispenseEvent) {
+        val block = event.block
+        val state = block.state
+
+        if (state is Dispenser) {
+            val data = block.blockData
+            if (data is Directional) {
+                val from = block.area
+                val to = block.getRelative(data.facing).area
+
+                if (from !== to &&
+                    (from.hasProtection(Protection.DISPENSER) || to.hasProtection(Protection.DISPENSER))
+                ) {
+                    event.isCancelled = true
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    fun onInventoryMoveItem(event: InventoryMoveItemEvent) {
+        val sourceHolder = event.source.holder
+        val destinationHolder = event.destination.holder
+
+        if (sourceHolder is Container && destinationHolder is Container) {
+            val sourceArea = sourceHolder.block.area
+            val destinationArea = destinationHolder.block.area
+
+            if (sourceArea !== destinationArea &&
+                (sourceArea.hasProtection(Protection.ITEM_TRANSFER) || destinationArea.hasProtection(Protection.ITEM_TRANSFER))
+            ) {
+                event.isCancelled = true
+            }
+        }
     }
 }
