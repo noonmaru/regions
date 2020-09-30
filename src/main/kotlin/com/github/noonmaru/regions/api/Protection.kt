@@ -38,7 +38,10 @@ enum class Protection(val key: String) : Indexable {
     ENTITY_PICKUP_ITEM("entityPickupItem"),
     ENTITY_CHANGE_BLOCK("entityChangeBlock"),
     EXPLOSION("explosion"),
-    ITEM_TRANSFER("itemTransfer");
+    ITEM_TRANSFER("itemTransfer"),
+    VEHICLE_ENTRANCE("vehicleEntrance"),
+    VEHICLE_EXIT("vehicleExit"),
+    SPONGE("sponge");
 
     override val offset: Int
         get() = ordinal

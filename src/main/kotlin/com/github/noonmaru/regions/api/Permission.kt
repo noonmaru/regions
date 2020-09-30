@@ -50,7 +50,8 @@ enum class Permission(val key: String) : Indexable {
     HANGING_BREAK("hangingBreak"),
     HANGING_PLACE("hangingPlace"),
     DROP_ITEM("dropItem"),
-    PICKUP_ITEM("pickupItem");
+    PICKUP_ITEM("pickupItem"),
+    ARMOR_STAND_MANIPULATION("armorStandManipulation");
 
     override val offset: Int
         get() = ordinal

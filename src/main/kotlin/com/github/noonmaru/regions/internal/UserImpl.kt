@@ -20,6 +20,7 @@ import com.github.noonmaru.regions.api.Member
 import com.github.noonmaru.regions.api.Region
 import com.github.noonmaru.regions.api.User
 import com.google.common.collect.ImmutableList
+import org.bukkit.Location
 import org.bukkit.entity.Player
 import java.util.*
 
@@ -36,6 +37,8 @@ class UserImpl(
 
     private val _regionMembers = HashSet<Member>()
 
+    internal var previousLocation: Location? = null
+
     override fun getMemberByRegion(region: Region): Member? {
         return _regionMembers.find { it.parent === region }
     }
@@ -47,4 +50,8 @@ class UserImpl(
 
 internal fun User.toImpl(): UserImpl {
     return this as UserImpl
+}
+
+internal fun Player.hasMasterKey(): Boolean {
+    return hasPermission("regions.action")
 }

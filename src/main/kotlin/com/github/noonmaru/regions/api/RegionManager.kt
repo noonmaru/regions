@@ -25,7 +25,7 @@ import java.util.*
 interface RegionManager {
     val cachedUsers: List<User>
 
-    val onlineUsers: List<User>
+    val onlineUsers: Collection<User>
 
     val worlds: List<RegionWorld>
 

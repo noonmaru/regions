@@ -1,30 +1,38 @@
 plugins {
+    kotlin("jvm") version "1.4.10"
     id("com.github.johnrengelman.shadow") version "5.2.0"
-    kotlin("jvm") version "1.3.61"
     `maven-publish`
 }
 
-group = properties["pluginGroup"]!!
-version = properties["pluginVersion"]!!
+val relocate = (findProperty("relocate") as? String)?.toBoolean() ?: true
+
+println("relocate = $relocate")
 
 repositories {
-    jcenter()
     mavenCentral()
-    maven(url = "https://papermc.io/repo/repository/maven-public/") //paper
-    maven(url = "https://repo.dmulloy2.net/nexus/repository/public/") //protocollib
-    maven(url = "https://jitpack.io/") //tap, psychic
-    maven(url = "https://maven.enginehub.org/repo/") //worldedit
+    maven(url = "https://papermc.io/repo/repository/maven-public/")
+    maven(url = "https://maven.enginehub.org/repo/")
+    maven(url = "https://jitpack.io")
+    mavenLocal()
 }
 
 dependencies {
-    compileOnly(kotlin("stdlib-jdk8")) //kotlin
-    compileOnly("com.destroystokyo.paper:paper-api:1.15.2-R0.1-SNAPSHOT") //paper
-    compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0") //protocollib
-    compileOnly("com.github.noonmaru:tap:2.3.3") //tap
-    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.1.0") //worldedit
-    implementation("com.github.noonmaru:kommand:0.1.9")
+    compileOnly(kotlin("stdlib-jdk8"))
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9")
+    compileOnly("com.destroystokyo.paper:paper-api:1.16.3-R0.1-SNAPSHOT")
+    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.2.0-SNAPSHOT")
 
-    testCompileOnly("junit:junit:4.12") //junit
+    implementation("com.github.noonmaru:tap:3.1.6")
+    implementation("com.github.noonmaru:kommand:0.4.0")
+
+    testImplementation("junit:junit:4.13")
+    testImplementation("org.mockito:mockito-core:3.3.3")
+    testImplementation("org.powermock:powermock-module-junit4:2.0.7")
+    testImplementation("org.powermock:powermock-api-mockito2:2.0.7")
+    testImplementation("org.slf4j:slf4j-api:1.7.25")
+    testImplementation("org.apache.logging.log4j:log4j-core:2.8.2")
+    testImplementation("org.apache.logging.log4j:log4j-slf4j-impl:2.8.2")
+    testImplementation("org.spigotmc:spigot:1.16.3-R0.1-SNAPSHOT")
 }
 
 tasks {
@@ -45,24 +53,32 @@ tasks {
             expand(project.properties)
         }
     }
-    shadowJar {
-        relocate("com.github.noonmaru.kommand", "com.github.noonmaru.regions.shaded")
-        archiveClassifier.set("dist")
-    }
     create<Jar>("sourcesJar") {
         archiveClassifier.set("sources")
         from(sourceSets["main"].allSource)
     }
-    create<Copy>("distJar") {
+    shadowJar {
+        archiveBaseName.set(project.property("pluginName").toString())
+        archiveVersion.set("") // For bukkit plugin update
+        archiveClassifier.set("") // Remove 'all'
+
+        if (relocate) {
+            relocate("com.github.noonmaru.kommand", "${rootProject.group}.${rootProject.name}.kommand")
+            relocate("com.github.noonmaru.tap", "${rootProject.group}.${rootProject.name}.tap")
+        }
+    }
+    create<Copy>("copyJarToDocker") {
         from(shadowJar)
-        into("W:\\Servers\\test\\plugins")
+        var dest = File(".docker/plugins")
+        if (File(dest, shadowJar.get().archiveFileName.get()).exists())
+            dest = File(dest, "update") // if plugin.jar exists in plugins change dest to plugins/update
+        into(dest)
     }
 }
 
 publishing {
     publications {
         create<MavenPublication>("Regions") {
-            artifactId = project.name
             from(components["java"])
             artifact(tasks["sourcesJar"])
         }

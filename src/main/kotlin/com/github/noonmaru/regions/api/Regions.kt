@@ -45,13 +45,13 @@ internal fun info(name: String) {
     Logger.info(name)
 }
 
-val Player.user: User
+val Player.regionUser: User
     get() = requireNotNull(Regions.manager.getUser(this)) { "$name is unregistered bukkit player" }
 
 val World.regionWorld: RegionWorld
     get() = requireNotNull(Regions.manager.getRegionWorld(this)) { "$name is unregistered bukkit world" }
 
-val Block.area: Area
+val Block.regionArea: Area
     get() = requireNotNull(Regions.manager.areaAt(world, x, y, z)) {
         "Failed to fetch area at ${world.name} $x $y $z"
     }
@@ -59,7 +59,7 @@ val Block.area: Area
 val Block.region: Region?
     get() = Regions.manager.regionAt(world, x, y, z)
 
-val Location.area: Area
+val Location.regionArea: Area
     get() = requireNotNull(Regions.manager.areaAt(world, blockX, blockY, blockZ)) {
         "Failed to fetch area at ${world.name} $blockX $blockY $blockZ"
     }
@@ -67,8 +67,8 @@ val Location.area: Area
 val Location.region: Region?
     get() = Regions.manager.regionAt(world, blockX, blockY, blockZ)
 
-val Entity.area: Area
-    get() = location.area
+val Entity.regionArea: Area
+    get() = location.regionArea
 
 val Entity.region: Region?
     get() = location.region

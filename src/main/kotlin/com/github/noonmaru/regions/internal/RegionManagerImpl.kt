@@ -39,8 +39,8 @@ import java.util.*
 class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
     override val cachedUsers: List<User>
         get() = ImmutableList.copyOf(_usersByUniqueId.values)
-    override val onlineUsers: List<User>
-        get() = ImmutableList.copyOf(_usersByPlayer.values)
+    override val onlineUsers: Collection<User>
+        get() = _onlineUsers
     override val worlds: List<RegionWorld>
         get() = ImmutableList.copyOf(_worldsByName.values)
     override val regions: List<Region>
@@ -50,6 +50,7 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
 
     private val _usersByUniqueId = MapMaker().weakValues().makeMap<UUID, UserImpl>()
     private val _usersByPlayer = IdentityHashMap<Player, UserImpl>(Bukkit.getMaxPlayers())
+    private val _onlineUsers: Collection<User> = Collections.unmodifiableCollection(_usersByPlayer.values)
 
     private val _worldsByName = TreeMap<String, RegionWorldImpl>(String.CASE_INSENSITIVE_ORDER)
     private val _worldsByBukkitWorld = IdentityHashMap<World, RegionWorldImpl>()
@@ -225,6 +226,7 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
         fun onQuit(event: PlayerQuitEvent) {
             _usersByPlayer.remove(event.player)?.apply {
                 bukkitPlayer = null
+                previousLocation = null
             }
         }
 

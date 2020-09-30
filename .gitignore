@@ -5,3 +5,9 @@ out/
 # Gradle
 .gradle
 build/
+
+# Docker
+.docker/
+
+# Bukkit
+logs/

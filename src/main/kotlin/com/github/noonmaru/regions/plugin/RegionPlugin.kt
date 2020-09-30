@@ -20,6 +20,7 @@ import com.github.noonmaru.kommand.kommand
 import com.github.noonmaru.regions.api.Regions
 import com.github.noonmaru.regions.command.AreaCommands
 import com.github.noonmaru.regions.command.RegionCommands
+import com.github.noonmaru.regions.internal.RegionManagerImpl
 import org.bukkit.plugin.java.JavaPlugin
 
 /**
@@ -29,8 +30,9 @@ class RegionPlugin : JavaPlugin() {
     override fun onEnable() {
         Regions.initialize(this)
 
-        server.pluginManager.apply {
-            registerEvents(EventListener(), this@RegionPlugin)
+        server.apply {
+            pluginManager.registerEvents(EventListener(), this@RegionPlugin)
+            scheduler.runTaskTimer(this@RegionPlugin, SchedulerTask(Regions.manager as RegionManagerImpl), 0L, 1L)
         }
 
         setupCommands()
