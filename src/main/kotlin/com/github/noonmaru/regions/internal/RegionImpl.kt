@@ -210,7 +210,7 @@ class RegionImpl(
         }
 
         val member = getMember(user)
-        val memberPermissions = member?._permissions ?: publicRole._permissions
+        val memberPermissions = getAllPermissionsForMember(member)
 
         permissions.or(memberPermissions)
 

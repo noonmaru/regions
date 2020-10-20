@@ -207,11 +207,15 @@ abstract class AreaImpl(
     }
 
     override fun testPermission(player: Player, permission: Permission): Boolean {
-        return getOrComputePlayerPermissions(player).contains(permission)
+        return getOrComputePlayerPermissions(player).let {
+            Permission.ADMINISTRATION in it || permission in it
+        }
     }
 
     override fun testPermissions(player: Player, permissions: Collection<Permission>): Boolean {
-        return getOrComputePlayerPermissions(player).containsAll(permissions)
+        return getOrComputePlayerPermissions(player).let {
+            Permission.ADMINISTRATION in it || it.containsAll(permissions)
+        }
     }
 
     internal open fun resetPlayerPermissions(player: Player) {
@@ -241,8 +245,12 @@ abstract class AreaImpl(
         private const val CFG_MEMBERS = "members"
     }
 
+    protected fun getAllPermissionsForMember(member: MemberImpl?): PermissionSet {
+        return PermissionSet(member?._permissions?.let { it.rawElements or _publicRole._permissions.rawElements } ?: _publicRole._permissions.rawElements)
+    }
+
     protected open fun computePlayerPermissions(player: Player): PermissionSet {
-        return _memberByUser[(manager.getUser(player))]?._permissions ?: _publicRole._permissions
+        return getAllPermissionsForMember(_memberByUser[(manager.getUser(player))])
     }
 
     internal fun setMustBeSave() {
