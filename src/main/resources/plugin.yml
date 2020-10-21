@@ -6,8 +6,10 @@ version: $version
 commands:
   region:
     usage: /<command>
+    permission: regions.command
   area:
     usage: /<command>
+    permission: regions.command
 
 permissions:
   regions.*:

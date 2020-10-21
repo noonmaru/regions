@@ -24,7 +24,6 @@ import com.github.noonmaru.kommand.argument.string
 import com.github.noonmaru.kommand.argument.suggestions
 import com.github.noonmaru.kommand.sendFeedback
 import com.github.noonmaru.regions.api.*
-import com.github.noonmaru.tap.mojang.getProfile
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
@@ -56,10 +55,23 @@ object AreaArgument : KommandArgument<Area> {
         val regions = Regions.manager.regions
         val list = ArrayList<String>()
 
-        list += worlds.map { "world:${it.name}" }
-        list += regions.map { "region:${it.name}" }
+        for (world in worlds) {
+            val name = world.name
+            val suggestion = "world:$name"
 
-        return list.suggestions(target)
+            if (name.startsWith(target, true) || suggestion.startsWith(target, true))
+                list += suggestion
+        }
+
+        for (region in regions) {
+            val name = region.name
+            val suggestion = "region:$name"
+
+            if (name.startsWith(target, true) || suggestion.startsWith(target, true))
+                list += suggestion
+        }
+
+        return list
     }
 }
 
@@ -134,9 +146,13 @@ object UserArgument : KommandArgument<User> {
         get() = "$TOKEN 유저를 찾지 못했습니다."
 
     override fun parse(context: KommandContext, param: String): User? {
-        val profile = getProfile(param) ?: return null
+        val profile = Bukkit.createProfile(param)
 
-        return Regions.manager.getUser(profile)
+        if (profile.complete()) {
+            return Regions.manager.getUser(profile)
+        }
+
+        return null
     }
 
     override fun listSuggestion(context: KommandContext, target: String): Collection<String> {

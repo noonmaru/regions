@@ -16,10 +16,9 @@
 
 package com.github.noonmaru.regions.internal
 
+import com.destroystokyo.paper.profile.PlayerProfile
 import com.github.noonmaru.regions.api.*
 import com.github.noonmaru.regions.plugin.RegionPlugin
-import com.github.noonmaru.tap.mojang.MojangProfile
-import com.github.noonmaru.tap.mojang.getProfile
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.MapMaker
 import org.bukkit.Bukkit
@@ -135,11 +134,19 @@ class RegionManagerImpl(plugin: RegionPlugin) : RegionManager {
     }
 
     override fun findUser(uniqueId: UUID): UserImpl? {
-        return getProfile(uniqueId)?.let { getUser(it) }
+        val profile = Bukkit.createProfile(uniqueId)
+
+        if (profile.complete())
+            return getUser(profile)
+
+        return null
     }
 
-    override fun getUser(profile: MojangProfile): UserImpl {
-        return getOrCreateUser(profile.uniqueId, profile.name)
+    override fun getUser(profile: PlayerProfile): UserImpl {
+        val uuid = requireNotNull(profile.id)
+        val name = requireNotNull(profile.name)
+
+        return getOrCreateUser(uuid, name)
     }
 
     private fun getOrCreateUser(uniqueId: UUID, name: String): UserImpl {

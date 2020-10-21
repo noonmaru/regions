@@ -22,8 +22,8 @@ dependencies {
     compileOnly("com.destroystokyo.paper:paper-api:1.16.3-R0.1-SNAPSHOT")
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.2.0-SNAPSHOT")
 
-    implementation("com.github.noonmaru:tap:3.1.6")
-    implementation("com.github.noonmaru:kommand:0.4.0")
+    implementation("com.github.noonmaru:tap:3.2.3")
+    implementation("com.github.noonmaru:kommand:0.6.3")
 
     testImplementation("junit:junit:4.13")
     testImplementation("org.mockito:mockito-core:3.3.3")

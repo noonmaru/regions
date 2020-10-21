@@ -16,7 +16,7 @@
 
 package com.github.noonmaru.regions.api
 
-import com.github.noonmaru.tap.mojang.MojangProfile
+import com.destroystokyo.paper.profile.PlayerProfile
 import org.bukkit.World
 import org.bukkit.entity.Player
 import java.util.*
@@ -33,7 +33,7 @@ interface RegionManager {
 
     fun findUser(uniqueId: UUID): User?
 
-    fun getUser(profile: MojangProfile): User
+    fun getUser(profile: PlayerProfile): User
 
     fun getUser(player: Player): User?
 
